@@ -1,0 +1,31 @@
+# SFuncs Package Hints
+
+The package makes heavy use of type parameterization.
+
+In general, an SFunc represents a mathematical concept: a stochastic function that takes arguments and randomly returns a value.
+The stochastic function could be sampled to produce a value, but it can also be reasoned about as a function, without sampling. 
+An SFunc has two (2) type parameters: the input type (which is a tuple of types of the arguments) and the output type. 
+The input type is typically represented by I and the output type by O.  Sometimes, when the input is split into two groups,
+we use I for the first group, J for the second group, and K for the tuple composed of the components of I and J.
+We also use Q for a second parameter type.
+
+If the input type is an empty tuple, we use an Dist SFunc.  There are many examples of Dist SFuncs, including Cat (for categorical),
+Constant, Flip (i.e. Bernoulli), and Normal.
+
+If the input type is a tuple of one or more types, we call these the parents of the SFuncs, and use a Conditional SFunc. A Conditional
+is a general data structure, with two sets of parents, I and J. The full parent type is K. The Conditional represents a stochastic function
+that takes a tuple of type I and returns the result of an SFunc with parents J. If J is empty, which will be a common case, this is simply
+a function that takes a tuple of type I and returns an Dist SFunc. The parameters of the entire conditional have type P. The type parameter S
+represents the resulting SFunc{J,O}.  While Conditional is a very general data structure, it has many operations defined, which appropriately
+delegate work to and organize the results of individual SFuncs.
+
+Some useful utility sfuncs include:
+
+- Det, which implements a deterministic function from I to O
+- Mixture of sfuncs
+- Switch, for selecting sfuncs based on a stochastic test
+- NetworkSFunc, which represents a graphical model consisting of a collection of sfuncs. This is a lightweight, sfunc version of the Network
+  data structure that can be used in operators.
+- Extend, which embeds an sfunc with one parent into an sfunc with a tuple of parents, where all but the one parent is ignored.
+   The Extend constructor is provided the position of the parent in a tuple. This is useful for aligning a set of sfuncs depending
+   on different parents to all depend on the same parent tuple.

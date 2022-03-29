@@ -1,0 +1,15 @@
+* text=auto
+
+.jl text eol=lf
+.txt text eol=lf
+.toml text eol=lf
+.md text eol=lf
+.org text eol=lf
+.tex text eol=lf
+
+.pdf binary
+.doc binary
+.docx binary
+.png binary
+.jpg binary
+.jpeg binary
