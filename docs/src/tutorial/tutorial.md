@@ -16,11 +16,11 @@ Scruff's philosophy is to allow a variety of representations and implementations
 
 ## Some opening examples
 
-We start this tutorial with three examples illustrating idiomatic use of Scruff and some of its capabilities. These examples can be found in the `docs/examples` folder.
+We start this tutorial with three examples illustrating idiomatic use of Scruff and some of its capabilities. These examples can be found in the `docs/examples` folder (they are also linked by the [Examples](@ref) page).
 
 ### Instant reasoning
 
-Our first example, found in `novelty_example.jl` is about detecting and characterizing novel behaviors. In this example, a behavior is simply something that generates a real number, but the example extends to more interesting kinds of behavior. The example shows how to create sfuncs, models, variables, and networks, and how to reason with them. We call this an instant reasoning example because there is no temporal element.
+Our first example, found in [`novelty_example.jl`](./../examples/../../examples/novelty_example.jl) is about detecting and characterizing novel behaviors. In this example, a behavior is simply something that generates a real number, but the example extends to more interesting kinds of behavior. The example shows how to create sfuncs, models, variables, and networks, and how to reason with them. We call this an instant reasoning example because there is no temporal element.
 
 We begin with some imports:
 
@@ -105,9 +105,7 @@ We add the observation to the `variables` vector and make its parents the `behav
 
 Finally, we create the instant network and return it.
 
-        return InstantNetwork(variables, graph)
-
-    end
+    return InstantNetwork(variables, graph)
 
 Now that we've built the network, we're ready to run some experiments. 
 Here's the code to run an experiment. It takes as arguments the setup, the vector of
@@ -222,7 +220,8 @@ as we add more values to the ranges of variables for the BP method.
 
 ### Incremental reasoning
 
-Building on the last point, our next example, found in `novelty_lazy.jl`, uses Scruff's 
+Building on the last point, our next example, found in 
+[`novelty_lazy.jl`](./../examples/../../examples/novelty_lazy.jl), uses Scruff's 
 incremental inference capabilities to gradually increase the range sizes of the 
 variables to improve the estimates. We're going to use an algorithm called Lazy Structured
 Factored Inference (LSFI). LSFI repeatedly calls an `InstantAlgorithm` (in this case
@@ -354,7 +353,7 @@ which increases the posterior mean.
 
 ### Dynamic reasoning
 
-Our final example riffs on the novelty theme to use dynamic reasoning.
+Our final example [`novelty_filtering.jl`](./../examples/../../examples/novelty_filtering.jl) riffs on the novelty theme to use dynamic reasoning.
 Now, observations are received over time at irregular intervals.
 A behavior now represents the velocity of an object moving in one dimension,
 starting at point 0.0.
