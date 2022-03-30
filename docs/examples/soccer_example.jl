@@ -156,7 +156,7 @@ function run_filtering_inference(network, alg)
     vars_no_score = copy(vars)
     deleteat!(vars_no_score,idx)
     for i=1:T
-        @info "i=$i"
+        println("i=$i")
         if(i>1)
             filter_step(alg, runtime, Variable[score_var], i-1, Dict{Symbol, Score}())
         end
