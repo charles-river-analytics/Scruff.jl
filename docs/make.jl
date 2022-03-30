@@ -26,5 +26,5 @@ makedocs(
 )
 
 deploydocs(
-    repo="github.com/p2t2/Julia.jl.git", 
+    repo="github.com/p2t2/Julia.jl", 
     branch_previews = "develop")
