@@ -16,6 +16,10 @@ To download the package, from the Julia package manager, run
 (v1.7) pkg> add https://github.com/p2t2/Scruff.jl
 ```
 
+## Scruff Tutorial
+
+The Scruff tutorial can be found at in the documenation at (https://p2t2.github.io/Scruff.jl/main/tutorial/tutorial.html).
+
 ## Building the documentation
 
 Scruff uses [Documenter.jl](https://juliadocs.github.io/Documenter.jl/stable/) to generate its documentation.  To build, navigate to the `docs` folder and run
@@ -32,7 +36,9 @@ To run the tests, activate the project as above and just run `test` from the `pk
 
 ## Development
 
-The source can be cloned from https://github.com/p2t2/Scruff.jl.git.
+Development against the Scruff codebase should _only_ be done by branching the `develop` branch.
+
+### Scruff module layout
 
 The Scruff packages are split into four (4) main modules:  `Models`, `Algorithms`, `SFuncs`, and `Operators`.
 
@@ -42,10 +48,10 @@ The Scruff packages are split into four (4) main modules:  `Models`, `Algorithms
 - To add to the `Operators` module, add a `.jl` file to the `src/operators` directory and `include` it in the `src/operators.jl` file
 
 [docs-main-img]: https://img.shields.io/badge/docs-main-blue.svg
-[docs-main-url]: https://p2t2.github.io/Scruff.jl/main
+[docs-main-url]: https://p2t2.github.io/Scruff.jl/stable
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
-[docs-dev-url]: https://p2t2.github.io/Scruff.jl/develop
+[docs-dev-url]: https://p2t2.github.io/Scruff.jl/dev
 
 [CI-img]: https://github.com/p2t2/Scruff.jl/actions/workflows/ci.yml/badge.svg
 [CI-url]: https://github.com/p2t2/Scruff.jl/actions/workflows/ci.yml

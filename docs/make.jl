@@ -25,4 +25,6 @@ makedocs(
     ]
 )
 
-#deploydocs(repo = "github.com/JuliaLang/Example.jl.git")
+deploydocs(
+    repo="github.com/p2t2/Julia.jl.git", 
+    branch_previews = "develop")
