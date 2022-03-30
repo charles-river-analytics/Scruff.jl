@@ -1,3 +1,5 @@
+[![][docs-main-img]][docs-main-url][![][docs-dev-img]][docs-dev-url]&nbsp;&nbsp;[![][CI-img]][CI-url]&nbsp;&nbsp;[![][codecov-img]][codecov-url]
+
 # Scruff.jl
 
 Scruff is an AI framework to build agents that sense, reason, and learn in the world using a variety of models.  It aims to integrate many different kinds of models in a coherent framework, provide flexibility in spatiotemporal modeling, and provide tools to compose, share, and reuse models and model components.
@@ -13,6 +15,10 @@ To download the package, from the Julia package manager, run
 ```julia-repl
 (v1.7) pkg> add https://github.com/p2t2/Scruff.jl
 ```
+
+## Scruff Tutorial
+
+The Scruff tutorial can be found at in the [documentation](https://p2t2.github.io/Scruff.jl/main/tutorial/tutorial.html).
 
 ## Building the documentation
 
@@ -30,7 +36,9 @@ To run the tests, activate the project as above and just run `test` from the `pk
 
 ## Development
 
-The source can be cloned from https://github.com/p2t2/Scruff.jl.git.
+Development against the Scruff codebase should _only_ be done by branching the `develop` branch.
+
+### Scruff module layout
 
 The Scruff packages are split into four (4) main modules:  `Models`, `Algorithms`, `SFuncs`, and `Operators`.
 
@@ -38,3 +46,15 @@ The Scruff packages are split into four (4) main modules:  `Models`, `Algorithms
 - To add to the `Algorithms` module, add a `.jl` file to the `src/algorithms/` directory and `include` it in the `src/algorithms.jl` file
 - To add to the `SFuncs` module, add a `.jl` file to the `src/sfuncs/` directory and `include` it in the `src/sfuncs.jl` file
 - To add to the `Operators` module, add a `.jl` file to the `src/operators` directory and `include` it in the `src/operators.jl` file
+
+[docs-main-img]: https://img.shields.io/badge/docs-main-blue.svg
+[docs-main-url]: https://p2t2.github.io/Scruff.jl/stable
+
+[docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
+[docs-dev-url]: https://p2t2.github.io/Scruff.jl/dev
+
+[CI-img]: https://github.com/p2t2/Scruff.jl/actions/workflows/ci.yml/badge.svg
+[CI-url]: https://github.com/p2t2/Scruff.jl/actions/workflows/ci.yml
+
+[codecov-img]: https://codecov.io/gh/p2t2/Scruff.jl/branch/main/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/p2t2/Scruff.jl
