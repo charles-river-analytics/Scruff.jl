@@ -1,4 +1,4 @@
-[![][docs-stable-img]][docs-stable-url][![][docs-dev-img]][docs-dev-url]&nbsp;&nbsp;[![][CI-img]][CI-url]&nbsp;&nbsp;[![][codecov-img]][codecov-url]
+[![][docs-main-img]][docs-main-url][![][docs-dev-img]][docs-dev-url]&nbsp;&nbsp;[![][CI-img]][CI-url]&nbsp;&nbsp;[![][codecov-img]][codecov-url]
 
 # Scruff.jl
 
