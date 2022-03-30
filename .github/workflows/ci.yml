@@ -8,6 +8,8 @@ on:
       - '*'
     paths-ignore:
       - 'docs/**'
+      - 'README.md'
+      - 'LICENSE'
   pull_request:
 jobs:
   test:

@@ -18,7 +18,7 @@ To download the package, from the Julia package manager, run
 
 ## Scruff Tutorial
 
-The Scruff tutorial can be found at in the documenation at (https://p2t2.github.io/Scruff.jl/main/tutorial/tutorial.html).
+The Scruff tutorial can be found at in the [documentation](https://p2t2.github.io/Scruff.jl/main/tutorial/tutorial.html).
 
 ## Building the documentation
 
