@@ -15,11 +15,13 @@ using Test
     include("test_net.jl")
     include("test_filter.jl")
     # These don't test anything, but we want to make sure any changes haven't broken the examples
-    include("../docs/examples/novelty_example.jl")
-    include("../docs/examples/novelty_lazy.jl")
-    include("../docs/examples/novelty_filtering.jl")
-    include("../docs/examples/rembrandt_example.jl")
-    include("../docs/examples/soccer_example.jl")
+    redirect_stdout(devnull) do
+        include("../docs/examples/novelty_example.jl")
+        include("../docs/examples/novelty_lazy.jl")
+        include("../docs/examples/novelty_filtering.jl")
+        include("../docs/examples/rembrandt_example.jl")
+        include("../docs/examples/soccer_example.jl")
+    end
 end
 
 end

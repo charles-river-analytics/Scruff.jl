@@ -12,7 +12,7 @@ First, [download Julia 1.6.0 or later](https://julialang.org/downloads/).
 Then, install the Scruff package with the Julia package manager.  From the Julia REPL, type `]` to enter the Pkg REPL mode and then run:
 
 ```julia-repl
-pkg> add https://github.com/p2t2/Scruff#master
+pkg> add https://github.com/p2t2/Scruff#main
 ```
 
 ## Developing Scruff
@@ -23,18 +23,9 @@ To develop Scruff, first pull down the code
 $ git clone https://github.com/p2t2/Scruff.git
 ```
 
-If desired, the Julia repl can be used to create a separate cloned workspace in which to develop the code:  navigate to the Scruff directory and launch julia.  
-
-```julia-repl
-julia> ]
-pkg> develop [--local] Scruff
-```
-
-See the Julia documentation for [`Pkg`](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) for details.
-
 ## Learning about Scruff
 
-Please read the tutorial, which describes most of the language features through examples.
+Please read the [The Scruff Tutorial](@ref), which describes most of the language features through examples.
 The library documentation contains detailed information about most of the data structures
 and functions used in the code.
 

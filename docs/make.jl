@@ -9,10 +9,11 @@ makedocs(
         Scruff.Operators, Scruff.Utils, Scruff.RTUtils],
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true"),
-    authors = "Avi Pfeffer, Michael Harridon, Joe Campolongo, Sanja Cvijic, and contributors.",
+    authors = "Avi Pfeffer, Michael Harridon, Joseph Campolongo, Sanja Cvijic, and contributors.",
     pages = [
         "Getting Started" => "index.md",
 	    "Tutorial" => "tutorial/tutorial.md",
+        "Examples" => "tutorial/examples.md",
         "Library" => Any[
             "Core" => "lib/core.md",
             "Stochastic Functions" => "lib/sfuncs.md",
@@ -25,4 +26,6 @@ makedocs(
     ]
 )
 
-#deploydocs(repo = "github.com/JuliaLang/Example.jl.git")
+deploydocs(
+    repo="github.com/p2t2/Scruff.jl", 
+    branch_previews = "develop")

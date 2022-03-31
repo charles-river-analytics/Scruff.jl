@@ -16,21 +16,24 @@ Scruff's philosophy is to allow a variety of representations and implementations
 
 ## Some opening examples
 
-We start this tutorial with three examples illustrating idiomatic use of Scruff and some of its capabilities. These examples can be found in the `docs/examples` folder.
+We start this tutorial with three examples illustrating idiomatic use of Scruff and some of its capabilities. These examples can be found in the `docs/examples` folder (they are also linked by the [Examples](@ref) page).
 
 ### Instant reasoning
 
-Our first example, found in `novelty_example.jl` is about detecting and characterizing novel behaviors. In this example, a behavior is simply something that generates a real number, but the example extends to more interesting kinds of behavior. The example shows how to create sfuncs, models, variables, and networks, and how to reason with them. We call this an instant reasoning example because there is no temporal element.
+Our first example, found in [`novelty_example.jl`](https://github.com/p2t2/Scruff.jl/tree/main/docs/examples/novelty_example.jl) is about detecting and characterizing novel behaviors. In this example, a behavior is simply something that generates a real number, but the example extends to more interesting kinds of behavior. The example shows how to create sfuncs, models, variables, and networks, and how to reason with them. We call this an instant reasoning example because there is no temporal element.
 
 We begin with some imports:
 
+```julia
     using Scruff
     using Scruff.Models
     using Scruff.SFuncs
     using Scruff.Algorithms
+```
 
 Since we're going to run experiments with different setups, we define a NoveltySetup data structure.
 
+```julia
     struct NoveltySetup
         known_sfs::Vector{Dist{Float64}}
         known_probs::Vector{Float64}
@@ -39,41 +42,54 @@ Since we're going to run experiments with different setups, we define a NoveltyS
         novelty_prior_sd::Float64
         novelty_sd::Float64
     end
+```
 
 Here, `known_sfs` is a vector of known behaviors, each one represented by a sfunc. In particular, each behavior is a `Dist{Float64}`, meaning it is an unconditional distribution over `Float64`. `known_probs` is the probabilities of the known behaviors, assuming the behavior is not novel, while `novelty_prob` is the probability that the behavior is novel. A novel behavior has a mean and standard deviation. The mean is drawn from a normal distrbution with mean `novelty_prior_mean` and standard deviation `novelty_prior_sd`. The novel behavior's own standard deviation is given by `novelty_sd`.
 
 We now define a function that takes a setup and returns a network. Since observations are also part of the network, this function also takes the number of observations as an argument.
 
+```julia
     function novelty_network(setup::NoveltySetup, numobs::Int)::InstantNetwork
+```
 
 This function begins by defining some variables. For the first variable, we'll go through the steps in detail. For the remaining variables, we'll use some syntactic sugar. The first variable represents the known behavior. Defining it takes three steps: creating the sfunc, defining the model, and associating it with a variable. Much of Scruff's power comes from separating these three concepts. However, for the common case where we want to do all three of these things together, we provide syntactic sugar.
 
 First we create the sfunc:
 
+```julia
     known_sf = Cat(setup.known_sfs, setup.known_probs)
+```
 
 This defines `known_sf` to be a categorical distribution, where the choices are provided by `setup.known_sfs` and the probabilities are specified by `setup.known_probs`. The important idea is that this distribution is an entity of its own, irrespective of specific variables that are related using it. An sfunc is similar to the mathematical concept of a function. It describes a relationship between variables that is not necessarily determinisitic. In mathematics, we can define concepts like function composition, which operate on the functions directly and don't require the notion of variables. Similarly in Scruff, there are a variety of ways to compose and combine sfuncs. Furthermore, we can have sfuncs be values in models as well, which enables higher-order probabilistic programming. In fact, in this example, `known_sf` represents a categorical distribution over sfuncs.
 
 After creating the sfunc, we create a model using the sfunc:
 
+```julia
     known_model = SimpleModel(known_sf)
+```
 
 A model describes which sfunc to generate for a variable in different situations. In general, the sfunc representing a variable's distribution can change depending on the situation, such as the time of instantiation of the variable and times of related instances. Here, we just have a `SimpleModel` that always returns the same sfunc, but later we will have more interesting models.
 
 The third step is to create a variable and associate it with the model. This is achieved by calling the model with the variable name (a symbol) as argument:
 
+```julia
     known = known_model(:known)
+```
 
 We now have the Julia variable `known` whose value is a Scruff variable with the name `:known` associated with `known_model`. If you just want to create a variable with a `SimpleModel` for a specific sfunc, you can use syntactic sugar as follows:
 
+```julia
     known = Cat(setup.known_sfs, setup.known_probs)()(:known)
+```
 
 When we call the sfunc with zero arguments, we create a `SimpleModel` with the sfunc; then, when we apply that model to the variable name, we create the variable. In the rest of this example, we will use this form. Let's create some more variables:
 
+```julia
     is_novel = Flip(setup.novelty_prob)()(:is_novel)
     novelty_mean = Normal(setup.novelty_prior_mean, setup.novelty_prior_sd)()(:novelty_mean)
     novelty = Det(Tuple{Float64}, Dist{Float64}, m -> Normal(m[1], setup.novelty_sd))()(:novelty)
     behavior = If{Dist{Float64}}()()(:behavior)
+```
 
 `is_novel` represents whether the behavior is novel or known. This variable will be true with probability `setup.novelty_prob`.
 `novelty_mean` represents the mean of the novel behavior using a normal distribuiton whose mean and standard deviation are given by the setup.
@@ -86,16 +102,20 @@ Note that the type of value produced by the `If` is a type parameter, which in t
 
 Now that we have these variables, we are ready to start building the connections described in the previous paragraph. We will build the ingredients to an `InstantNetwork`, which are a list of variables, and a `VariableGraph`, representing a dictionary from variables to their parents.
 
+```julia
     variables = [known, is_novel, novelty_mean, novelty, behavior]
     graph = VariableGraph(novelty => [novelty_mean], behavior => [is_novel, novelty, known])
+```
 
 Finally, we need to add observations, which is done in a flexible way depending on the number of observations.
 
+```julia
     for i in 1:numobs
         obs = Generate{Float64}()()(obsname(i))
         push!(variables, obs)
         graph[obs] = [behavior]
     end
+```
 
 For each observation, we create a variable whose name is given by the utility function
 `obsname(i)`. The sfunc is `Generate{Float64}`. `Generate{Float64}` is a second-order sfunc 
@@ -105,15 +125,16 @@ We add the observation to the `variables` vector and make its parents the `behav
 
 Finally, we create the instant network and return it.
 
-        return InstantNetwork(variables, graph)
-
-    end
+```julia
+    return InstantNetwork(variables, graph)
+```
 
 Now that we've built the network, we're ready to run some experiments. 
 Here's the code to run an experiment. It takes as arguments the setup, the vector of
 observations, and the `InstantAlgorithm` to use (an `InstantAlgorithm` is an algorithm
 run on an `InstantNetwork`; it does not handle dynamics).
 
+```julia
     function do_experiment(setup::NoveltySetup, obs::Vector{Float64}, alg::InstantAlgorithm)
         net = novelty_network(setup, length(obs))
         evidence = Dict{Symbol, Score}()
@@ -128,6 +149,7 @@ run on an `InstantNetwork`; it does not handle dynamics).
         println("Probability of novel = ", probability(alg, runtime, is_novel, true))
         println("Posterior mean of novel behavior = ", mean(alg, runtime, novelty_mean))
     end
+```
 
 `do_experiment` first creates the network and then builds up the `evidence` data structure,
 which is a dictionary from variable names to scores. In Scruff, a `Score` is an sfunc 
@@ -144,6 +166,7 @@ Finally, the `probability` and `mean` methods give us the answers we want.
 
 The examples next defines some setups and an observation list.
 
+```julia
     function setup(generation_sd::Float64, prob_novel::Float64)::NoveltySetup
         known = [Normal(0.0, generation_sd), Normal(generation_sd, generation_sd)]
         return NoveltySetup(known, [0.75, 0.25], prob_novel, 0.0, 10.0, generation_sd)
@@ -151,6 +174,7 @@ The examples next defines some setups and an observation list.
     setup1 = setup(1.0, 0.1)
     setup2 = setup(4.0, 0.1)
     obs = [5.0, 6.0, 7.0, 8.0, 9.0]
+```
 
 In `setup1`, behaviors have a smaller standard deviation, while in `setup2`, 
 the standard deviation is larger.
@@ -160,6 +184,7 @@ when they have a small standard deviation.
 
 Finally, we run some experiments. 
 
+```julia
     println("Importance sampling")
     println("Narrow generation standard deviation")
     do_experiment(setup1, obs, LW(1000))
@@ -177,6 +202,7 @@ Finally, we run some experiments.
     do_experiment(setup1, obs, ThreePassBP(25))
     println("Broad generation evidence")
     do_experiment(setup2, obs, ThreePassBP(25))
+```
 
 `LW(1000)` creates a likelihood weighting algorithm
 that uses 1000 particles, while `ThreePassBP()` creates a non-loopy belief propagation 
@@ -222,7 +248,8 @@ as we add more values to the ranges of variables for the BP method.
 
 ### Incremental reasoning
 
-Building on the last point, our next example, found in `novelty_lazy.jl`, uses Scruff's 
+Building on the last point, our next example, found in 
+[`novelty_lazy.jl`](https://github.com/p2t2/Scruff.jl/tree/main/docs/examples/novelty_lazy.jl), uses Scruff's 
 incremental inference capabilities to gradually increase the range sizes of the 
 variables to improve the estimates. We're going to use an algorithm called Lazy Structured
 Factored Inference (LSFI). LSFI repeatedly calls an `InstantAlgorithm` (in this case
@@ -237,6 +264,7 @@ but our code needs to handle the bounds.
 The network and setups are just as in `novelty_example.jl`. The code for running an
 experiment is similar in structure but has some new features.
 
+```julia
     function do_experiment(setup, obs)
         net = novelty_network(setup, length(obs))
         is_novel = get_node(net, :is_novel)
@@ -258,6 +286,7 @@ experiment is similar in structure but has some new features.
             println("Posterior mean of novel behavior = ", mean(alg, runtime, novelty_mean))
         end
     end
+```
 
 As before, the code creates the network, gets handles of some variables, and fills
 the evidence data structure.
@@ -354,7 +383,7 @@ which increases the posterior mean.
 
 ### Dynamic reasoning
 
-Our final example riffs on the novelty theme to use dynamic reasoning.
+Our final example [`novelty_filtering.jl`](https://github.com/p2t2/Scruff.jl/tree/main/docs/examples/novelty_filtering.jl) riffs on the novelty theme to use dynamic reasoning.
 Now, observations are received over time at irregular intervals.
 A behavior now represents the velocity of an object moving in one dimension,
 starting at point 0.0.
@@ -363,6 +392,7 @@ models.
 
 The setup is similar but slightly different:
 
+```julia
     struct NoveltySetup
         known_velocities::Vector{Float64}
         known_probs::Vector{Float64}
@@ -372,6 +402,7 @@ The setup is similar but slightly different:
         transition_sd::Float64
         observation_sd::Float64
     end
+```
 
 We have known velocities and their probabilities, the probability of novelty, and the mean and standard deviation of the novel velocity.
 We also have the standard deviation of the transition and observation models.
@@ -383,6 +414,7 @@ To create a `VariableTimeModel`, we need to create a new type that inherits from
 for the initial time step, and `make_transition`, which creates the sfunc at each time
 step at which we instantiate the variable. 
 
+```julia
     struct PositionModel <: VariableTimeModel{Tuple{}, Tuple{Float64, Float64}, Float64} 
         setup::NoveltySetup
     end
@@ -396,7 +428,8 @@ step at which we instantiate the variable.
         end
         t = time - parenttimes[1]
         return Chain(Tuple{Float64, Float64}, Float64, f)
-end
+    end
+```
 
 `make_initial` simply returns `Constant(0.0)`, meaning that the object always starts at
 position 0.0 with no uncertainty.
@@ -431,15 +464,16 @@ example, all the logic of choosing the behavior happens in the initial graph, wh
 position logic and its dependence on previous position and velocity is in the transition
 graph. The transition graph also contains copy edges for the static variables.
 
+```julia
     variables = [known_velocity, is_novel, novel_velocity, velocity, position, observation]
     initial_graph = VariableGraph(velocity => [is_novel, novel_velocity, known_velocity], observation => [position])
-    transition_graph = VariableGraph(known_velocity => [known_velocity], is_novel => [is_novel], novel_velocity => [novel_velocity], 
-                                     velocity => [velocity], position => [position, velocity], observation => [position])
-
+    transition_graph = VariableGraph(known_velocity => [known_velocity], is_novel => [is_novel], novel_velocity => [novel_velocity], velocity => [velocity], position => [position, velocity], observation => [position])
+```
 
 We'll show the `do_experiment` implementation in detail because it illustrates how 
 asynchronous inference is performed.
 
+```julia 
     function do_experiment(setup::NoveltySetup, obs::Vector{Tuple{Float64, Float64}}, alg::Filter)
         net = novelty_network(setup, length(obs))
         runtime = Runtime(net, 0.0) # Set the time type to Float64 and initial time to 0
@@ -459,6 +493,7 @@ asynchronous inference is performed.
             println("Posterior mean of velocity = ", mean(alg, runtime, velocity))
         end
     end
+```
 
 After creating the network, we create a runtime. The call to `Runtime` takes a second
 argument that not only sets the initial time but also established the type used to
@@ -483,10 +518,12 @@ examples.
 For the experiments, we create a setup and two sequences of observations, the second of
 which is harder to explain with known behaviors.
 
+```julia
     # Known velocities are 0 and 1, novelty has mean 0 and standard deviation 10
     setup = NoveltySetup([0.0, 1.0], [0.7, 0.3], 0.1, 0.0, 10.0, 1.0, 1.0)
     obs1 = [(1.0, 2.1), (3.0, 5.8), (3.5, 7.5)] # consistent with velocity 2
     obs2 = [(1.0, 4.9), (3.0, 17.8), (3.5, 20.5)] # consistent with velocity 6
+```
 
 We then use `CoherentPF(1000)` as the filtering algorithm. Current filtering algorithms in 
 Scruff combine an instantiation method that creates a window with an underlying 
