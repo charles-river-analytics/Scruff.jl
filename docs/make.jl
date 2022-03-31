@@ -28,4 +28,4 @@ makedocs(
 
 deploydocs(
     repo="github.com/p2t2/Scruff.jl", 
-    branch_previews = "develop")
+    devbranch = "develop")
