@@ -1,3 +1,4 @@
+
 [![][docs-main-img]][docs-main-url][![][docs-dev-img]][docs-dev-url]&nbsp;&nbsp;[![][CI-img]][CI-url]&nbsp;&nbsp;[![][codecov-img]][codecov-url]
 
 # Scruff.jl
@@ -13,7 +14,7 @@ Scruff is provided as a [Julia](https://julialang.org/) package and is licensed 
 To download the package, from the Julia package manager, run
 
 ```julia-repl
-(v1.7) pkg> add https://github.com/p2t2/Scruff.jl#main
+(v1.7) pkg> add Scruff
 ```
 
 ## Scruff Tutorial and Examples
