@@ -12,7 +12,7 @@ First, [download Julia 1.6.0 or later](https://julialang.org/downloads/).
 Then, install the Scruff package with the Julia package manager.  From the Julia REPL, type `]` to enter the Pkg REPL mode and then run:
 
 ```julia-repl
-pkg> add https://github.com/p2t2/Scruff#main
+pkg> add Scruff
 ```
 
 ## Developing Scruff
