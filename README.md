@@ -19,7 +19,7 @@ To download the package, from the Julia package manager, run
 
 ## Scruff Tutorial and Examples
 
-The Scruff tutorial can be found in the [tutorial](https://p2t2.github.io/Scruff.jl/main/tutorial/tutorial/) section of the documentation (the [tutorial](https://p2t2.github.io/Scruff.jl/dev/tutorial/tutorial/) is also built against the develop branch).
+The Scruff tutorial can be found in the [tutorial](https://p2t2.github.io/Scruff.jl/stable/tutorial/tutorial/) section of the documentation.
 
 Scruff examples can be found in the [examples/](docs/examples/) directory.
 
@@ -61,3 +61,4 @@ The Scruff packages are split into four (4) main modules:  `Models`, `Algorithms
 
 [codecov-img]: https://codecov.io/gh/p2t2/Scruff.jl/branch/main/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/p2t2/Scruff.jl
+
