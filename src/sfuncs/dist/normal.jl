@@ -129,6 +129,20 @@ end
 end
 
 @impl begin
+    struct NormalExpectation end
+    function expectation(sf::Normal, i::Tuple{})
+        return sf.params[1]
+    end
+end
+
+@impl begin
+    struct NormalVariance end
+    function variance(sf::Normal, i::Tuple{})
+        return sf.params[2]^2
+    end
+end
+
+@impl begin
     struct NormalBoundedProbsBoundedProbs
         numpartitions::Int64 = 10
     end
@@ -196,6 +210,20 @@ end
     function compute_pi(sf::Normal, range::__OptVec{Float64}, parranges::NTuple{N,Vector}, 
             incoming_pis::Tuple)::Dist{Float64} where {N}
         Cat(range, collect(map(x -> Distributions.pdf(dist(sf), x), range)))
+    end
+end
+
+@impl begin
+    struct NormalProduct end
+    function productnorm(sf1::Normal, sf2::Normal)
+        mu1, std1 = sf1.params
+        var1 = std1^2
+        mu2, std2 = sf2.params
+        var2 = std2^2
+        var = 1/((1/var1) + (1/var2))
+        mu = (var1*mu2 + var2*mu1)/(var1 + var2)
+
+        return Normal(mu, var^0.5)
     end
 
 end

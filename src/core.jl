@@ -50,7 +50,7 @@ return the actual type (i.e. `O`) of the `ValueTyped`
 value_type(v::ValueTyped{O}) where {O} = O
 
 """
-    abstract type SFunc{I<:Tuple, O}
+    abstract type SFunc{I, O}
 
 A Stochastic Function type with input variables defined by `I` and output type `O`.  
 This is an abstract representation for a collection of operators with the same 
@@ -66,7 +66,7 @@ All sfuncs have the following operators defined:
 `SFunc` _also_ has both the operators `cpdf` and `logcpdf` defined in terms of the other. 
 All sfuncs should implement one or the other of these operators.
 """
-abstract type SFunc{I<:Tuple, O} end
+abstract type SFunc{I, O} end
 
 Base.print_without_params(x::Type{<:SFunc}) = false
 

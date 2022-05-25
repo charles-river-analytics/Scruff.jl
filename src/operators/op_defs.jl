@@ -23,7 +23,8 @@ MultiInterface.get_imp(::Nothing, args...) = nothing
 @interface sample_logcpdf(sf::SFunc{I,O}, i::I)::Tuple{O, AbstractFloat} where {I,O}
 @interface invert(sf::SFunc{I,O}, o::O)::I where {I,O}
 @interface lambda_msg(sf::SFunc{I,O}, i::SFunc{<:__Opt{Tuple{}}, O})::SFunc{<:__Opt{Tuple{}}, I} where {I,O}
-@interface marginalize(sf::SFunc{I,O}, i::SFunc{<:__Opt{Tuple{}}, I})::SFunc{<:__Opt{Tuple{}}, O} where {I,O}
+@interface marginalize(sf::SFunc{I, O}, i::Dist{I})::Dist{O} where {I,O}
+@interface productnorm(sf1::Dist{T}, sf2::Dist{T})::Dist{T} where T
 @interface logcpdf(sf::SFunc{I,O}, i::I, o::O)::AbstractFloat where {I,O}
 @interface cpdf(sf::SFunc{I,O}, i::I, o::O)::AbstractFloat where {I,O}
 @interface log_cond_prob_plus_c(sf::SFunc{I,O}, i::I, o::O)::AbstractFloat where {I,O}
