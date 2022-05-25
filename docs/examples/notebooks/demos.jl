@@ -34,12 +34,12 @@ begin
 	# Some basic operator examples
 	norm = Normal(0., 1.)
 
+    samples = [2^i for i in 1:24]
+	
 	#= CALL OPERATOR =#
 	# Estimate basic statistics. Available in closed form for gaussians.
-	mu_true = expectation(norm, tuple())
-	var_true = variance(norm, tuple())
-
-    samples = [2^i for i in 1:24]
+	(mu_true, var_true) = (expectation(norm, tuple()),
+		                   variance(norm, tuple()))
 end
 
 # ╔═╡ 97e6059b-b7f0-4b17-9340-7aef21464349
