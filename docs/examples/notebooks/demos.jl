@@ -67,9 +67,9 @@ end
 # ╔═╡ 56773c97-6b4c-4dd8-8f24-d528eac54b70
 begin
 	function push_plot_data!(data, expectation, variance)
-        push!(data[1], expectation-sqrt(variance))
+        push!(data[1], expectation - sqrt(variance))
         push!(data[2], expectation)
-        push!(data[3], expectation+sqrt(variance))
+        push!(data[3], expectation + sqrt(variance))
     end
     function plot_async_random_walk(data, observations)
 		N = size(data[1])[1] - 1
@@ -159,7 +159,7 @@ end
 
 # ╔═╡ Cell order:
 # ╟─2f130e30-dbdf-11ec-12c6-0d0cb74dcfbe
-# ╠═6131b416-6e38-4cad-839b-a668df2c1477
+# ╟─6131b416-6e38-4cad-839b-a668df2c1477
 # ╠═e597edc8-635b-4d6d-beb9-455eeb603eab
 # ╠═97e6059b-b7f0-4b17-9340-7aef21464349
 # ╠═73c7c02b-99ad-495d-a507-7c2302fd5a73
