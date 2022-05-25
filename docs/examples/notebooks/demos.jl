@@ -19,10 +19,10 @@ end
 
 # ╔═╡ 6131b416-6e38-4cad-839b-a668df2c1477
 begin
-	function est_mu(sf, num_samples)
+	function est_mu_from_samples(sf, num_samples)
 	    return sum([sample(sf, tuple()) for i in 1:num_samples])/num_samples
 	end
-	function est_var(sf, num_samples)
+	function est_var_from_samples(sf, num_samples)
 		samples = [sample(sf, tuple()) for i in 1:num_samples]
 		mu_est = sum(samples)/num_samples
 		return sum([(samp - mu_est)^2 for samp in samples])/(num_samples - 1)
@@ -33,8 +33,9 @@ end
 begin
 	# Some basic operator examples
 	norm = Normal(0., 1.)
-	num_samples = 100
 
+	#= CALL OPERATOR =#
+	# Estimate basic statistics. Available in closed form for gaussians.
 	mu_true = expectation(norm, tuple())
 	var_true = variance(norm, tuple())
 
@@ -44,7 +45,7 @@ end
 # ╔═╡ 97e6059b-b7f0-4b17-9340-7aef21464349
 begin
     plot(samples,
-		 [abs(mu_true - est_mu(norm, num_samples)) for num_samples in samples],
+		 [abs(mu_true - est_mu_from_samples(norm, num_samples)) for num_samples in samples],
 	     scale=:log10,
 	     xlabel="Num Samples",
 		 ylabel="Error",
@@ -55,7 +56,7 @@ end
 # ╔═╡ 73c7c02b-99ad-495d-a507-7c2302fd5a73
 begin
 	plot(samples,
-		 [abs(var_true - est_var(norm, num_samples)) for num_samples in samples],
+		 [abs(var_true - est_var_from_samples(norm, num_samples)) for num_samples in samples],
 	     scale=:log10,
 	     xlabel="Num Samples",
 		 ylabel="Error",
@@ -70,7 +71,7 @@ begin
         push!(data[2], expectation)
         push!(data[3], expectation+sqrt(variance))
     end
-    function plot_abp(data, observations)
+    function plot_async_random_walk(data, observations)
 		N = size(data[1])[1] - 1
 		data_min = minimum(data[1])
 		data_max = maximum(data[3])
@@ -87,50 +88,73 @@ begin
 				  	0.5*(variance(obs[2], tuple())^0.5) for obs in observations]])
     end
     function observation_occurred()
-        return rand(Distributions.Bernoulli(0.01))
+		p_observe = 0.01
+        return rand(Distributions.Bernoulli(p_observe))
     end
 end
 
 # ╔═╡ 660f3c4a-740c-4388-80d5-9bd02412071b
 begin
-        g = WienerProcess(0.1)
+    g = WienerProcess(0.1)
 
-        NSteps = 1000
-        start = 3.
+    NSteps = 1000
+	start = 3.
 
-        _last_observation = 0
-        _plot_data = [[start], [start], [start]]
-        beliefs = [Normal(3., 0.)]
-	    observations = []
-        for i in 1:NSteps
-			global _last_observation
-            # Update belief using some random previous time step (after last obs).
-            # In this case the result doesn't matter because 
-			# the Wiener process is defined exactly for different time deltas.
-            # This just demonstrates that reasoning continues 
-			# to be correct when updating beliefs conditioned on arbitrary deltas.
-            prev_step = rand((_last_observation+1):i)
-            cond_belief::SFunc = make_transition(g, prev_step-1, i)
-            push!(beliefs, marginalize(cond_belief, beliefs[prev_step]))
+    function pick_obs_noise()
+		return rand(1:10)/5
+	end
+	
+	_last_observation = 0
+    _plot_data = [[start], [start], [start]]
+    beliefs = [Normal(start, 0.)]
+    observations = []
+    for i in 1:NSteps
+		global _last_observation
+        # Update belief using some random previous time step (after last obs).
+        # In this case the result doesn't matter because 
+        # the Wiener process is defined exactly for different time deltas.
+        # This just demonstrates that reasoning continues 
+		# to be correct when updating beliefs conditioned on arbitrary deltas.
+        prev_step = rand((_last_observation + 1):i)
+		
+        cond_belief::SFunc = make_transition(g, prev_step - 1, i)
 
-            if observation_occurred() && i - _last_observation > 5
-				true_val = sample(beliefs[end], tuple())
-				noise_amt = rand(1:10)/5
-				obs_model = Normal(true_val, noise_amt)
-				noisy_obs = sample(obs_model, tuple())
-				noisy_obs_model = Normal(noisy_obs, noise_amt)
+		#= CALL OPERATOR =#
+		# Get SFunc given by p(y) = \int p(y|x)q(x)dx
+		# Can be done in closed form for gaussians
+		new_belief = marginalize(cond_belief, beliefs[prev_step])
+        
+		push!(beliefs, new_belief)
+
+        if observation_occurred() && i - _last_observation > 3
+			# Take a sample from our predicted distribution as an "observation"
+			true_val = sample(beliefs[end], tuple())
+			# Add some noise to the observation
+			noise_amt = pick_obs_noise()
+			obs_model = Normal(true_val, noise_amt)
+			noisy_obs = sample(obs_model, tuple())
+			# Model the noise when using it to update state estimate
+			noisy_obs_model = Normal(noisy_obs, noise_amt)
+
+			#= CALL OPERATOR =#
+			# Create an SFunc describing p(x) \propto u(x)v(x)
+			# This can be done in closed form for gaussians
+			# The Kalman filter is based upon this
+            beliefs[end] = productnorm(noisy_obs_model, beliefs[end])
 				
-                beliefs[end] = productnorm(noisy_obs_model, beliefs[end])
-                _last_observation = i
-				push!(observations, (_last_observation, noisy_obs_model))
-            end
-
-			# Call some ops to estimate stats
-            _expectation = expectation(beliefs[end], tuple())
-            _variance = variance(beliefs[end], tuple())
-            push_plot_data!(_plot_data, _expectation, _variance)
+            _last_observation = i
+			push!(observations, (_last_observation, noisy_obs_model))
         end
-        plot_abp(_plot_data, observations)
+
+		#= CALL OPERATOR =#
+		# Estimate stats. Again, fast for gaussians
+        _expectation = expectation(beliefs[end], tuple())
+        _variance = variance(beliefs[end], tuple())
+
+		# Update plots
+        push_plot_data!(_plot_data, _expectation, _variance)
+    end
+    plot_async_random_walk(_plot_data, observations)
 end
 
 # ╔═╡ Cell order:
