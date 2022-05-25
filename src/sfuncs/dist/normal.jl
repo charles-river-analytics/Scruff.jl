@@ -225,7 +225,6 @@ end
 
         return Normal(mu, var^0.5)
     end
-
 end
 #=
 @impl begin

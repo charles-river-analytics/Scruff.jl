@@ -95,13 +95,13 @@ end
 
 # ╔═╡ 660f3c4a-740c-4388-80d5-9bd02412071b
 begin
-    g = WienerProcess(0.1)
+    g = WienerProcess(0.0001)
 
-    NSteps = 1000
+    NSteps = 5000
 	start = 3.
 
     function pick_obs_noise()
-		return rand(1:10)/5
+		return rand(1:10)*2.
 	end
 	
 	_last_observation = 0
@@ -117,12 +117,12 @@ begin
 		# to be correct when updating beliefs conditioned on arbitrary deltas.
         prev_step = rand((_last_observation + 1):i)
 		
-        cond_belief::SFunc = make_transition(g, prev_step - 1, i)
+        belief_transition::SFunc = make_transition(g, prev_step - 1, i)
 
 		#= CALL OPERATOR =#
 		# Get SFunc given by p(y) = \int p(y|x)q(x)dx
 		# Can be done in closed form for gaussians
-		new_belief = marginalize(cond_belief, beliefs[prev_step])
+		new_belief = marginalize(belief_transition, beliefs[prev_step])
         
 		push!(beliefs, new_belief)
 
@@ -158,10 +158,10 @@ begin
 end
 
 # ╔═╡ Cell order:
-# ╟─2f130e30-dbdf-11ec-12c6-0d0cb74dcfbe
+# ╠═2f130e30-dbdf-11ec-12c6-0d0cb74dcfbe
 # ╟─6131b416-6e38-4cad-839b-a668df2c1477
 # ╠═e597edc8-635b-4d6d-beb9-455eeb603eab
 # ╠═97e6059b-b7f0-4b17-9340-7aef21464349
 # ╠═73c7c02b-99ad-495d-a507-7c2302fd5a73
-# ╠═56773c97-6b4c-4dd8-8f24-d528eac54b70
+# ╟─56773c97-6b4c-4dd8-8f24-d528eac54b70
 # ╠═660f3c4a-740c-4388-80d5-9bd02412071b
