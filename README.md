@@ -19,7 +19,7 @@ To download the package, from the Julia package manager, run
 
 ## Scruff Tutorial and Examples
 
-The Scruff tutorial can be found in the [tutorial](https://p2t2.github.io/Scruff.jl/stable/tutorial/tutorial/) section of the documentation.
+The Scruff tutorial can be found in the [tutorial](https://github.com/charles-river-analytics/Scruff.jl/tree/develop/docs/src/tutorial) section of the documentation.
 
 Scruff examples can be found in the [examples/](docs/examples/) directory.
 
@@ -51,10 +51,10 @@ The Scruff packages are split into four (4) main modules:  `Models`, `Algorithms
 - To add to the `Operators` module, add a `.jl` file to the `src/operators` directory and `include` it in the `src/operators.jl` file
 
 [docs-main-img]: https://img.shields.io/badge/docs-main-blue.svg
-[docs-main-url]: https://p2t2.github.io/Scruff.jl/stable
+[docs-main-url]: https://charles-river-analytics.github.io/Scruff.jl/stable
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
-[docs-dev-url]: https://p2t2.github.io/Scruff.jl/dev
+[docs-dev-url]: https://charles-river-analytics.github.io/Scruff.jl/dev
 
 [CI-img]: https://github.com/p2t2/Scruff.jl/actions/workflows/ci.yml/badge.svg
 [CI-url]: https://github.com/p2t2/Scruff.jl/actions/workflows/ci.yml
