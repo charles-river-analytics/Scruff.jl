@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.5
+# v0.19.9
 
 using Markdown
 using InteractiveUtils
@@ -73,8 +73,8 @@ begin
     end
     function plot_async_random_walk(data, observations)
 		N = size(data[1])[1] - 1
-		data_min = minimum(data[1])
-		data_max = maximum(data[3])
+		data_min = min(minimum(data[1]), minimum((expectation(obs[2], tuple()) - 0.5*(variance(obs[2], tuple())^0.5) for obs in observations)))
+		data_max = max(maximum(data[1]), maximum((expectation(obs[2], tuple()) + 0.5*(variance(obs[2], tuple())^0.5) for obs in observations)))
         plt = plot(0:N, data[[1,3]], 
 			       xlim=(0, N),
 			       ylim=(data_min, data_max), 		 				   
@@ -82,10 +82,8 @@ begin
 			       marker=0, 
 			       legend=false)
 		scatter!([obs[1] for obs in observations],
-		         [[expectation(obs[2], tuple()) - 
-				 	0.5*(variance(obs[2], tuple())^0.5) for obs in observations],
-			      [expectation(obs[2], tuple()) + 
-				  	0.5*(variance(obs[2], tuple())^0.5) for obs in observations]])
+				 [expectation(obs[2], tuple()) for obs in observations]; 
+				 yerror=[0.5*variance(obs[2], tuple())^0.5 for obs in observations])
     end
     function observation_occurred()
 		p_observe = 0.01
@@ -101,7 +99,7 @@ begin
 	start = 3.
 
     function pick_obs_noise()
-		return rand(1:10)*2.
+		return rand(1:10)/20.
 	end
 	
 	_last_observation = 0
@@ -163,5 +161,5 @@ end
 # ╠═e597edc8-635b-4d6d-beb9-455eeb603eab
 # ╠═97e6059b-b7f0-4b17-9340-7aef21464349
 # ╠═73c7c02b-99ad-495d-a507-7c2302fd5a73
-# ╟─56773c97-6b4c-4dd8-8f24-d528eac54b70
+# ╠═56773c97-6b4c-4dd8-8f24-d528eac54b70
 # ╠═660f3c4a-740c-4388-80d5-9bd02412071b
