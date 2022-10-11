@@ -19,7 +19,7 @@ To download the package, from the Julia package manager, run
 
 ## Scruff Tutorial and Examples
 
-The Scruff tutorial can be found in the [tutorial](ttps://github.com/charles-river-analytics/Scruff.jl/tree/develop/docs/src/tutorial) section of the documentation.
+The Scruff tutorial can be found in the [tutorial](https://github.com/charles-river-analytics/Scruff.jl/tree/develop/docs/src/tutorial) section of the documentation.
 
 Scruff examples can be found in the [examples/](docs/examples/) directory.
 
