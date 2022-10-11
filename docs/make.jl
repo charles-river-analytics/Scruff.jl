@@ -9,7 +9,7 @@ makedocs(
         Scruff.Operators, Scruff.Utils, Scruff.RTUtils],
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true"),
-    authors = "Avi Pfeffer, Michael Harridon, Joseph Campolongo, Sanja Cvijic, and contributors.",
+    authors = "Avi Pfeffer, Michael Harradon, Joseph Campolongo, Sanja Cvijic, and contributors.",
     pages = [
         "Getting Started" => "index.md",
 	    "Tutorial" => "tutorial/tutorial.md",
@@ -27,5 +27,5 @@ makedocs(
 )
 
 deploydocs(
-    repo="github.com/p2t2/Scruff.jl", 
+    repo="github.com/charles-river-analytics/Scruff.jl", 
     devbranch = "develop")
