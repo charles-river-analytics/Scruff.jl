@@ -1,6 +1,6 @@
 name = "Scruff"
 uuid = "6c98c146-7a27-4df0-99b1-e6e7c9a81876"
-version = "0.8.2"
+version = "0.8.4"
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
