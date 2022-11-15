@@ -11,7 +11,7 @@ using Scruff.SFuncs
 
 import Scruff: make_initial, make_transition
 import Scruff.Models: get_dt
-import Scruff.Operators: Sample, sample, Logcpdf, logcpdf, Marginalize, marginalize
+import Scruff.Operators: Sample, sample, Logcpdf, logcpdf, Marginalize, marginalize, expectation
 
 struct MyModel <: Model{Tuple{}, Tuple{Int}, Tuple{Int, Int}} end
 

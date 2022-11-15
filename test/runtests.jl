@@ -8,6 +8,7 @@ using Test
     include("test_sfuncs.jl")
     include("test_score.jl")
     include("test_utils.jl")
+    include("test_ops.jl")
     include("test_ve.jl")
     include("test_lsfi.jl")
     include("test_bp.jl")
