@@ -60,7 +60,7 @@ using DataStructures
 using Dates
 using Random
 
-using ..Models
+using Scruff.Models
 
 import Base.isless
 
