@@ -1,11 +1,13 @@
 export
     parent_ranges,
     get_range,
+    has_range,
     set_range!,
     set_ranges!,
     expander_range
 
 import Scruff: get_range
+
 
 #####################################################################
 #                                                                   #
@@ -36,12 +38,77 @@ function parent_ranges(runtime::Runtime, var::Variable{I,J,O}, depth = typemax(I
     return convert(Vector{T}, result)
 end
 
+
+"""
+    RANGE
+
+The constant key used to store the range of a specific variable instance 
+"""
+const RANGE = :__range__
+
+"""
+    set_range!(runtime::Runtime, inst::Instance{O}, range::Vector{<:O}, depth::Int = 1) where O
+
+Sets the range value for the given instance. Defaults to depth of 1.
+"""
+function set_range!(runtime::Runtime, inst::Instance{O}, range::Vector{<:O}, depth::Int = 1) where O
+    if has_value(runtime, inst, RANGE)
+        curr = get_value(runtime, inst, RANGE)
+        s = Tuple{Int, Vector{O}}[]
+        i = 1
+        while i <= length(curr)
+            pair = curr[i]
+            d = pair[1]
+            if d > depth
+                push!(s, pair)
+                i += 1
+            end
+            push!(s, (depth, range))
+            i = d == depth ? i+1 : i
+            for j = i:length(curr)
+                push!(s, curr[j])
+            end
+            set_value!(runtime, inst, RANGE, s)
+            return
+        end
+        push!(s, (depth, range))
+        set_value!(runtime, inst, RANGE, s)
+    else
+        set_value!(runtime, inst, RANGE, [(depth, range)])
+    end
+end
+
+"""
+    get_range(runtime::Runtime, inst::Instance, depth = max_value(Int))
+
+Returns the range value for the given instance; this will return
+`nothing` if no range has been set.
+
+The depth specifies the maximum depth of range desired.
+"""
+function get_range(runtime::Runtime, inst::Instance, depth = typemax(Int))
+    has_range(runtime, inst, depth) || return nothing
+    rng = get_value(runtime, inst, RANGE)
+    for i in 1:length(rng)
+        (d,r) = rng[i]
+        if d <= depth
+            return r
+        end
+    end
+    return nothing
+end
+
+function has_range(runtime::Runtime, inst::Instance, depth::Int = typemax(Int)) 
+    has_value(runtime, inst, RANGE) || return false
+    r = get_value(runtime, inst, RANGE)
+    (d,_) = r[length(r)]
+    return d <= depth
+end
+
 """
     get_range(runtime::DynamicRuntime, v::Variable{I,J,O}, depth = 1) where {I,J,O}
 
 Returns the range of the most recent instance of the given variable.
-
-See [`Scruff.get_range`](@ref)
 """
 function get_range(runtime::DynamicRuntime, v::Variable{I,J,O}, depth = 1) where {I,J,O}
     inst = current_instance(runtime, v)
@@ -64,8 +131,6 @@ end
     get_range(runtime::InstantRuntime, v::Node{O}, depth = 1) where O
 
 Returns the range of the given node.
-
-See [`Scruff.get_range`](@ref)
 """
 function get_range(runtime::InstantRuntime, v::Node{O}, depth = 1) where O
     inst = runtime.instances[v]
