@@ -6,9 +6,6 @@ export
     set_ranges!,
     expander_range
 
-import Scruff: get_range
-
-
 #####################################################################
 #                                                                   #
 # Algorithm building blocks for setting and expanding the ranges of #
