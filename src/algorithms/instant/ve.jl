@@ -2,8 +2,8 @@ export
     VE,
     ve
 
-import Scruff.Operators.make_factors
-import Scruff.SFuncs: Invertible, Serial
+import ..Operators.make_factors
+import ..SFuncs: Invertible, Serial
 using Folds
 
 """

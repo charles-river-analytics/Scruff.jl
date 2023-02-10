@@ -2,7 +2,7 @@ import Base.length
 
 using Distributions:Categorical
 using StatsFuns: logsumexp
-using Scruff.SFuncs: Cat
+using ..SFuncs: Cat
 
 export 
     Particles,

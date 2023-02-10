@@ -5,11 +5,9 @@ using ..MultiInterface
 
 using ...Scruff
 using ..Utils
-using ..Operators
-
-import ..Operators: Support
-
+import ..Operators
 Operators.@import_operators()
+import ..Operators:  __OptVec, Support, SupportQuality
 
 include("sfuncs/dist/dist.jl")
 include("sfuncs/dist/cat.jl")

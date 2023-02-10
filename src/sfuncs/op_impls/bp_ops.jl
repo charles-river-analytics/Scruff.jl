@@ -2,18 +2,8 @@
     bp_ops: operators used in BP that apply to all sfuncs
 =#
 
-using Scruff.Utils
+using ..Utils
 using Folds
-
-export compute_lambda,
-       compute_bel,
-       send_pi,
-       outgoing_pis,
-       outgoing_lambdas
-
-    #    @op_impl Scruff function Compute_lambda{SFunc}((range, lambda_msgs))
-    #     return normalized_product(lambda_msgs, length(range))
-    # end
     
 @impl begin
     struct SFuncComputeLambda end
