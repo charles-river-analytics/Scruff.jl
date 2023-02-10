@@ -1,3 +1,5 @@
+module CoreTest
+
 using Test
 using Plots
 
@@ -11,7 +13,7 @@ using Scruff.SFuncs
 
 import Scruff: make_initial, make_transition
 import Scruff.Models: get_dt
-import Scruff.Operators: Sample, sample, Logcpdf, logcpdf, Marginalize, marginalize
+import Scruff.Operators: Sample, sample, Logcpdf, logcpdf, Marginalize, marginalize, Expectation, expectation, Variance, variance
 
 struct MyModel <: Model{Tuple{}, Tuple{Int}, Tuple{Int, Int}} end
 
@@ -210,10 +212,7 @@ wienerprocess = WienerProcess(0.1)
                 _logcpdf = logcpdf(sf, (0.0f0,), _sample)
             end   
         end
-    
-
     end
-
 end
 
-
+end
