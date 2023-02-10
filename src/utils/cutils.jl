@@ -196,7 +196,7 @@ function doop(x::Float64, y::Float64, op::Function)
     return op(x,y)
 end
 
-function doop(x::Dict, y::Any, op) where {K,V}
+function doop(x::Dict, y::Any, op) 
     result = Dict()
     xf = floatize(x)
     for (k,v) in xf
@@ -205,7 +205,7 @@ function doop(x::Dict, y::Any, op) where {K,V}
     return result
 end
 
-function doop(x::Dict, y::Dict, op) where {K,V1,V2}
+function doop(x::Dict, y::Dict, op)
     result = Dict()
     xf = floatize(x)
     yf = floatize(y)

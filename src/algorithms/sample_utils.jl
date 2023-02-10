@@ -1,6 +1,6 @@
 import Base.length
 
-using Distributions:Categorical
+using Distributions: Categorical
 using StatsFuns: logsumexp
 using ..SFuncs: Cat
 

@@ -594,7 +594,3 @@ import Scruff.Operators: cpdf
     end
     
 end
-
-
-
-
