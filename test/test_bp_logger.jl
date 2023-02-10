@@ -5,7 +5,7 @@ using Scruff.SFuncs
 using Scruff.Utils
 using Scruff.RTUtils
 using Scruff.Models
-using Scruff.Algorithms
+import Scruff.Algorithms
 
 pyplot()
 
