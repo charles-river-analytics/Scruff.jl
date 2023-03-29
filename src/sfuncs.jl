@@ -14,6 +14,7 @@ include("sfuncs/dist/cat.jl")
 include("sfuncs/dist/constant.jl")
 include("sfuncs/dist/flip.jl")
 include("sfuncs/dist/normal.jl")
+include("sfuncs/dist/uniform.jl")
 
 include("sfuncs/score/score.jl")
 include("sfuncs/score/hardscore.jl")

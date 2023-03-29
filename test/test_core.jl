@@ -5,11 +5,11 @@ using Plots
 
 import Distributions
 
-using Scruff
-using Scruff.Operators
-using Scruff.MultiInterface
-using Scruff.Models
-using Scruff.SFuncs
+using ..Scruff
+using ..Scruff.Operators
+using ..Scruff.MultiInterface
+using ..Scruff.Models
+using ..Scruff.SFuncs
 
 import Scruff: make_initial, make_transition
 import Scruff.Models: get_dt

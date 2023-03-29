@@ -1,8 +1,8 @@
 using Test
-using Scruff
-using Scruff.Operators
-using Scruff.SFuncs
-using Scruff.Utils
+using ..Scruff
+using ..Scruff.Operators
+using ..Scruff.SFuncs
+using ..Scruff.Utils
 
 @testset "Score" begin
 

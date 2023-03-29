@@ -5,13 +5,13 @@ import Scruff.Operators.bounded_probs
 import Scruff.Operators.range
 
 using Test
-using Scruff
-using Scruff.Utils
-using Scruff.RTUtils
-using Scruff.SFuncs
-using Scruff.Models
-using Scruff.Operators
-import Scruff.Algorithms: three_pass_BP, loopy_BP, ThreePassBP, LoopyBP, infer, probability
+using ..Scruff
+using ..Scruff.Utils
+using ..Scruff.RTUtils
+using ..Scruff.SFuncs
+using ..Scruff.Models
+using ..Scruff.Operators
+import ..Scruff.Algorithms: three_pass_BP, loopy_BP, ThreePassBP, LoopyBP, infer, probability
 
 @testset "BP" begin
 
