@@ -34,6 +34,15 @@ using ..Scruff.Utils
             @test get_log_score(s, :b) == -2.0
         end
 
+        @testset "Multiple score" begin
+            s1 = SoftScore([:a, :b], [0.1, 0.2])
+            s2 = LogScore([:b, :c], [-1.0, -2.0])
+            s = MultipleScore([s1, s2])
+            @test isapprox(get_log_score(s, :a), -Inf64)
+            @test isapprox(get_log_score(s, :b), log(0.2) - 1.0)
+            @test isapprox(get_log_score(s, :c), -Inf64)
+        end
+
         @testset "Functional score" begin
             f(x) = 1.0 / x
             s = FunctionalScore{Float64}(f)
