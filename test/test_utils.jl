@@ -1,7 +1,7 @@
 using Test
-using ..Scruff
-using ..Scruff.Utils
-using ..Scruff.RTUtils
+using Scruff
+using Scruff.Utils
+using Scruff.RTUtils
 using AbstractTrees
 using DataStructures
 

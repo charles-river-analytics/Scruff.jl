@@ -3,12 +3,12 @@ import Base.isapprox
 import PrettyPrint
 
 using Test
-using ..Scruff
-using ..Scruff.Utils
-using ..Scruff.RTUtils
-using ..Scruff.SFuncs
-using ..Scruff.Algorithms
-import ..Scruff.Operators: cpdf
+using Scruff
+using Scruff.Utils
+using Scruff.RTUtils
+using Scruff.SFuncs
+using Scruff.Algorithms
+import Scruff.Operators: cpdf
 
 @testset "Importance" begin
     

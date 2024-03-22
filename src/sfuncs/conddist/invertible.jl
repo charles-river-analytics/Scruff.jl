@@ -2,7 +2,7 @@ export
     Invertible
 
 """
-    struct Invertible{I,O} <: SFunc{Tuple{I},O,Nothing}
+    struct Invertible{I,O} <: SFunc{Tuple{I},O}
 
 An invertible sfunc, with both a `forward` and a `inverse` function provided.
 

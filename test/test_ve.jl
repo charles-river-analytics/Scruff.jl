@@ -1,11 +1,11 @@
 using Test
-using ..Scruff
-using ..Scruff.Utils
-using ..Scruff.RTUtils
-using ..Scruff.Models
-using ..Scruff.SFuncs
-using ..Scruff.Operators
-import ..Scruff.Algorithms: VE, ve, infer, probability, greedy_order, unconnected_neighbors, cost, copy_graph, eliminate
+using Scruff
+using Scruff.Utils
+using Scruff.RTUtils
+using Scruff.Models
+using Scruff.SFuncs
+using Scruff.Operators
+import Scruff.Algorithms: VE, ve, infer, probability, greedy_order, unconnected_neighbors, cost, copy_graph, eliminate
 
 @testset "VE" begin
 

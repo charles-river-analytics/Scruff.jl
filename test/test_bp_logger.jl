@@ -1,11 +1,11 @@
 include("..//src//utils//logplots.jl")
 
-using ..Scruff
-using ..Scruff.SFuncs
-using ..Scruff.Utils
-using ..Scruff.RTUtils
-using ..Scruff.Models
-import ..Scruff.Algorithms
+using Scruff
+using Scruff.SFuncs
+using Scruff.Utils
+using Scruff.RTUtils
+using Scruff.Models
+import Scruff.Algorithms
 
 pyplot()
 

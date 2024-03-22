@@ -1,7 +1,7 @@
 using Test
-using ..Scruff
-using ..Scruff.SFuncs
-using ..Scruff.Operators
+using Scruff
+using Scruff.SFuncs
+using Scruff.Operators
 
 @testset "net" begin
     @testset "Build NetworkSFunc" begin

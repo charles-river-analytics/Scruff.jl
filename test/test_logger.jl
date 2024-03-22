@@ -1,12 +1,12 @@
 using Test
 
 using Logging
-using ..Scruff
-using ..Scruff.Models
-using ..Scruff.Utils
-using ..Scruff.RTUtils
-using ..Scruff.SFuncs
-using ..Scruff.Operators
+using Scruff
+using Scruff.Models
+using Scruff.Utils
+using Scruff.RTUtils
+using Scruff.SFuncs
+using Scruff.Operators
 
 @testset "test loggers" begin
     x1 = Cat([1,2], [0.1, 0.9])()(:x1)
