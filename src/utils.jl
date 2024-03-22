@@ -57,5 +57,4 @@ function normalize(xs)
     return _transform(f, xs) 
 end
 
-
 end

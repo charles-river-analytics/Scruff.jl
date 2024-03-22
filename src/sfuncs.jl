@@ -5,21 +5,21 @@ using ..MultiInterface
 
 using ...Scruff
 using ..Utils
-using ..Operators
-
-import ..Operators: Support
-
+import ..Operators
 Operators.@import_operators()
+import ..Operators:  __OptVec, Support, SupportQuality
 
 include("sfuncs/dist/dist.jl")
 include("sfuncs/dist/cat.jl")
 include("sfuncs/dist/constant.jl")
 include("sfuncs/dist/flip.jl")
 include("sfuncs/dist/normal.jl")
+include("sfuncs/dist/uniform.jl")
 
 include("sfuncs/score/score.jl")
 include("sfuncs/score/hardscore.jl")
 include("sfuncs/score/softscore.jl")
+include("sfuncs/score/multiplescore.jl")
 include("sfuncs/score/logscore.jl")
 include("sfuncs/score/functionalscore.jl")
 include("sfuncs/score/normalscore.jl")

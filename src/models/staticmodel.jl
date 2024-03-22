@@ -17,5 +17,5 @@ function make_initial(m::StaticModel, time)
 end
 
 function make_transition(::StaticModel{I,O}, parenttimes, time) where {I,O} 
-    return Det(Tuple{O}, O, x -> x[1])
+    return Det(Tuple{O}, O, x -> x)
 end

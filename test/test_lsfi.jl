@@ -3,13 +3,13 @@ import Base.isapprox
 import PrettyPrint
 
 using Test
-using Scruff
-using Scruff.Utils
-using Scruff.RTUtils
-using Scruff.Models
-using Scruff.SFuncs
-using Scruff.Operators
-import Scruff.Algorithms: LSFI, probability_bounds, prepare, refine, ve
+using ..Scruff
+using ..Scruff.Utils
+using ..Scruff.RTUtils
+using ..Scruff.Models
+using ..Scruff.SFuncs
+using ..Scruff.Operators
+import ..Scruff.Algorithms: LSFI, probability_bounds, prepare, refine, ve
 
 using Scruff.MultiInterface
 

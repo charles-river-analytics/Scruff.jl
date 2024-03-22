@@ -1,6 +1,6 @@
 export Cat
 
-import Scruff.Utils.normalize
+import ..Utils.normalize
 import Distributions.Categorical
 
 @doc """

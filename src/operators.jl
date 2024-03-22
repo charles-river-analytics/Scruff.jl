@@ -69,10 +69,12 @@ The `Operators` module defines the following interfaces for the following operat
 """
 module Operators
 
-using Scruff
+using ...Scruff
 
 include("operators/op_performance.jl")
 include("operators/op_defs.jl")
+
+
 
 """
     module_functions(mod)
@@ -89,30 +91,36 @@ function module_functions(mod)
     return list
 end
 
+Op = @__MODULE__
+
 """
     export_operators()
 
-A macro that creates an `export` statement for all the functions in the `Scruff.Operators` module.
+Exports all the functions defined in Operators.
 """
-macro export_operators()
-    is = "export " * join(module_functions(Scruff.Operators), ", ") 
-    quote
-        $(Meta.parse(is))
-    end
+function export_operators()
+    is = "export " * join(module_functions(Op), ", ") 
+    eval(Meta.parse(is)) 
 end
+
+function module_name_string(fullname)
+    strs = [string(x) * "." for x in fullname[1:length(fullname)-1]]
+    join(strs) * string(fullname[length(fullname)])
+end
+
 
 """
     import_operators()
 
-A macro that creates an `import Scruff.Operators:` statement for all the functions in the `Scruff.Operators` module.
+Imports all the functions defined in Operators
 """
 macro import_operators()
-    is = "import Scruff.Operators: " * join(module_functions(Scruff.Operators), ", ") 
-    quote
-        $(Meta.parse(is))
+    is = "import " * module_name_string(fullname(Op)) * ": " * string(join(module_functions(Op), ", "))
+    quote 
+        Base.eval(@__MODULE__, Meta.parse($(is))) 
     end
 end
 
-@export_operators()
+export_operators()
 
 end

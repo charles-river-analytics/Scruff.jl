@@ -1,12 +1,12 @@
 using Test
 
-using Scruff
-using Scruff.Utils
-using Scruff.RTUtils
-using Scruff.Models
-using Scruff.SFuncs
-using Scruff.Algorithms
-import Scruff: make_initial, make_transition
+using ..Scruff
+using ..Scruff.Utils
+using ..Scruff.RTUtils
+using ..Scruff.Models
+using ..Scruff.SFuncs
+using ..Scruff.Algorithms
+import ..Scruff: make_initial, make_transition
 
 @testset "Filtering" begin
     
