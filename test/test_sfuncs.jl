@@ -1,9 +1,9 @@
 using Test
-using ..Scruff
-using ..Scruff.Operators
-using ..Scruff.MultiInterface
-using ..Scruff.SFuncs
-using ..Scruff.Utils
+using Scruff
+using Scruff.Operators
+using Scruff.MultiInterface
+using Scruff.SFuncs
+using Scruff.Utils
 import Distributions
 
 function test_support(sf::SFunc{I,O}, parranges, target, quality; 
