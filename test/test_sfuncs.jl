@@ -145,6 +145,34 @@ end
         @test isapprox(compute_pi(f, [false, true], (), ()).params, [0.3, 0.7])
     end
 
+    @testset "Uniform" begin
+        u = SFuncs.Uniform(-1.0, 3.0)
+        
+        test_support(u, (), [-1.0, 0.0, 1.0, 2.0, 3.0], :IncrementalSupport; size = 5)
+        test_support(u, (), [-1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0], :IncrementalSupport; 
+            size = 9, curr = [-0.5, 0.5, 1.5, 2.5])
+        test_support(u, (), [-1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0], :IncrementalSupport; 
+            size = 10, curr = [-0.5, 0.5, 1.0, 1.5, 2.5])
+        
+        cs = [0.0, 0.0, 0.0, 0.0]
+        tot = 1000
+        for i in 1:tot
+            x = sample(u, ())
+            cs[Int(floor(x)) + 2] += 1
+        end
+        for j in 1:4
+            @test isapprox(cs[j] / tot, 0.25; atol = 0.05)
+        end
+        @test isapprox(logcpdf(u, (), 0.0), log(0.25))
+        @test isapprox(logcpdf(u, (), 5.0), -Inf64)
+
+        @test isapprox(bounded_probs(u, [-1.0, 0.0, 1.0, 2.0, 3.0], ())[1],
+                        [0.125, 0.25, 0.25, 0.25, 0.125])
+        @test isapprox(bounded_probs(u, [-1.0, 0.0, 1.0, 2.0, 3.0], ())[2],
+                        [0.125, 0.25, 0.25, 0.25, 0.125])
+        @test isapprox(bounded_probs(u, [-1.0, -9.0, -8.0], ())[1], [0.0, 0.0, 1.0])
+    end
+    
     @testset "Normal" begin
         n = SFuncs.Normal(-1.0,1.0)
         dist = Distributions.Normal(-1.0, 1.0)
