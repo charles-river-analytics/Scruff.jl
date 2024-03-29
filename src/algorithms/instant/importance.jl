@@ -60,14 +60,12 @@ function answer(::Marginal, ::Importance, runtime::Runtime, instance::VariableIn
     return Cat(vs, ps)
 end
 
-const Reject = ErrorException("Reject")
-
 """
     rejection_proposal(::Runtime, instance::VariableInstance, parent_values::Tuple)
 
 Return a proposer and scorer to implement standard rejection sampling from the prior.
 It proposes a value for the `instance` from its sfunc, and scores it by the evidence,
-if any. If the score is -Infinity, it throws a Reject exception.
+if any.
 """
 function rejection_proposal(runtime::Runtime, instance::VariableInstance)
     proposer(parent_values) = (sample(get_sfunc(instance), parent_values), 0.0)
@@ -175,43 +173,46 @@ function _importance(runtime::Runtime, num_samples::Int, proposal_function::Func
             end
         end
     end
-    s = 1
-    while s <= num_samples
-        try
-            vnum = 1
-            for v in nodes 
-                if v isa Variable
-                    try
-                      inst = current_instance(runtime, v)
-                      if !isnothing(interventions[vnum])
-                          iv = interventions[vnum]
-                          samples[s][v.name] = sample(iv, ())
-                      else
-                          proposer = proposers[vnum]
-                          pars = get_initial_parents(net, v)
-                          parvals = tuple([samples[s][p.name] for p in pars]...)
-                          (x, lw) = proposer(parvals)
-                          pe = get_log_score(evidences[vnum], x)
-                          if !isfinite(pe)
-                              throw(Reject)
-                          end
-                          samples[s][v.name] = x
-                          lws[s] += lw + pe
-                      end
-                      vnum += 1
-                    catch ex
-                      @error("Error on variable $v")
-                      rethrow(ex)
+
+    function handle_sample(s)
+        vnum = 1
+        for v in nodes 
+            if v isa Variable
+                try
+                    inst = current_instance(runtime, v)
+                    if !isnothing(interventions[vnum])
+                        iv = interventions[vnum]
+                        samples[s][v.name] = sample(iv, ())
+                    else
+                        proposer = proposers[vnum]
+                        pars = get_initial_parents(net, v)
+                        parvals = tuple([samples[s][p.name] for p in pars]...)
+                        (x, lw) = proposer(parvals)
+                        pe = get_log_score(evidences[vnum], x)
+                        if !isfinite(pe)
+                            # Resample
+                            return s
+                        end
+                        samples[s][v.name] = x
+                        lws[s] += lw + pe
                     end
+                    vnum += 1
+                catch ex
+                    @error("Error $ex on variable $v")
+                    rethrow(ex)
                 end
             end
-            s += 1
-        catch e
-            if e != Reject
-                rethrow(e)
-            end
         end
+
+        # Success
+        return s + 1
     end
+
+    s = 1
+    while s <= num_samples
+        s = handle_sample(s)
+    end
+
     for v in nodes
         if v isa Variable
             ps = Dict{output_type(v), Float64}()
@@ -278,13 +279,13 @@ function infer(algorithm::Importance, runtime::InstantRuntime,
             end
         end
     end
-    for (n,e) in evidence
-        v = get_node(net, n)
+    for (n, e) in evidence
+        v = get_node(net, n; throw_missing=true)
         inst = current_instance(runtime, v)
         post_evidence!(runtime, inst, e)
     end
-    for (n,i) in interventions
-        v = get_node(net, n)
+    for (n, i) in interventions
+        v = get_node(net, n; throw_missing=true)
         inst = current_instance(runtime, v)
         post_intervention!(runtime, inst, i)
     end
