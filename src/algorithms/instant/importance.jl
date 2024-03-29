@@ -198,11 +198,11 @@ function _importance(runtime::Runtime, num_samples::Int, proposal_function::Func
                           samples[s][v.name] = x
                           lws[s] += lw + pe
                       end
+                      vnum += 1
                     catch ex
                       @error("Error on variable $v")
                       rethrow(ex)
                     end
-                      vnum += 1
                 end
             end
             s += 1
