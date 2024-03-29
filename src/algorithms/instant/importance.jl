@@ -181,23 +181,28 @@ function _importance(runtime::Runtime, num_samples::Int, proposal_function::Func
             vnum = 1
             for v in nodes 
                 if v isa Variable
-                    inst = current_instance(runtime, v)
-                    if !isnothing(interventions[vnum])
-                        iv = interventions[vnum]
-                        samples[s][v.name] = sample(iv, ())
-                    else
-                        proposer = proposers[vnum]
-                        pars = get_initial_parents(net, v)
-                        parvals = tuple([samples[s][p.name] for p in pars]...)
-                        (x,lw) = proposer(parvals)
-                        pe = get_log_score(evidences[vnum], x)
-                        if !isfinite(pe)
-                            throw(Reject)
-                        end
-                        samples[s][v.name] = x
-                        lws[s] += lw + pe
+                    try
+                      inst = current_instance(runtime, v)
+                      if !isnothing(interventions[vnum])
+                          iv = interventions[vnum]
+                          samples[s][v.name] = sample(iv, ())
+                      else
+                          proposer = proposers[vnum]
+                          pars = get_initial_parents(net, v)
+                          parvals = tuple([samples[s][p.name] for p in pars]...)
+                          (x, lw) = proposer(parvals)
+                          pe = get_log_score(evidences[vnum], x)
+                          if !isfinite(pe)
+                              throw(Reject)
+                          end
+                          samples[s][v.name] = x
+                          lws[s] += lw + pe
+                      end
+                    catch 
+                      @error("Error on variable $v")
+                      rethrow()
                     end
-                    vnum += 1
+                      vnum += 1
                 end
             end
             s += 1
