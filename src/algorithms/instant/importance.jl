@@ -198,9 +198,9 @@ function _importance(runtime::Runtime, num_samples::Int, proposal_function::Func
                           samples[s][v.name] = x
                           lws[s] += lw + pe
                       end
-                    catch 
+                    catch ex
                       @error("Error on variable $v")
-                      rethrow()
+                      rethrow(ex)
                     end
                       vnum += 1
                 end
@@ -208,7 +208,7 @@ function _importance(runtime::Runtime, num_samples::Int, proposal_function::Func
             s += 1
         catch e
             if e != Reject
-                throw(e)
+                rethrow(e)
             end
         end
     end
