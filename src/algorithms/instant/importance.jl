@@ -190,7 +190,7 @@ function _importance(runtime::Runtime, num_samples::Int, proposal_function::Func
                         (x, lw) = proposer(parvals)
                         pe = get_log_score(evidences[vnum], x)
                         if !isfinite(pe)
-                            # Resample
+                            # Try again
                             return s
                         end
                         samples[s][v.name] = x
