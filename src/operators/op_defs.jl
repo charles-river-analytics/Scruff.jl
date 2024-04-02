@@ -18,10 +18,12 @@ __Opt{T} = Union{Nothing, T}
 # to support 
 MultiInterface.get_imp(::Nothing, args...) = nothing
 
+@interface forward(sf::SFunc{I,O}, i::I)::Dist{O} where {I,O}
+@interface inverse(sf::SFunc{I,O}, o::O)::Score{I} where {I,O}
 @interface is_deterministic(sf::SFunc)::Bool
 @interface sample(sf::SFunc{I,O}, i::I)::O where {I,O}
 @interface sample_logcpdf(sf::SFunc{I,O}, i::I)::Tuple{O, AbstractFloat} where {I,O}
-@interface invert(sf::SFunc{I,O}, o::O)::I where {I,O}
+# @interface invert(sf::SFunc{I,O}, o::O)::I where {I,O}
 @interface lambda_msg(sf::SFunc{I,O}, i::SFunc{<:__Opt{Tuple{}}, O})::SFunc{<:__Opt{Tuple{}}, I} where {I,O}
 @interface marginalize(sf::SFunc{I, O}, i::Dist{I})::Dist{O} where {I,O}
 @interface productnorm(sf1::Dist{T}, sf2::Dist{T})::Dist{T} where T
