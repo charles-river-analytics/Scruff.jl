@@ -182,7 +182,8 @@ end
                        parent_ix::Integer)::Score where {N,I,O}
 
         # Need to make sure the target parent range is a Vector{T} rather than a Vector{Any}
-        T = typeof(parranges[parent_ix][1])
+        T = typejoin([typeof(x) for x in parranges[parent_ix]]...)
+        
         target_parrange :: Vector{T} = parranges[parent_ix]
         lams = [send_lambda(comp, lambda, range, parranges, incoming_pis, parent_ix) for comp in sf.components]
         scores = [[get_score(lams[j], target_parrange[i]) for i in 1:length(target_parrange)] for j in 1:length(sf.components)]
