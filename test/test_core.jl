@@ -130,6 +130,8 @@ wienerprocess = WienerProcess(0.1)
                 @test inst1 isa PlaceholderInstance
                 @test inst2 isa VariableInstance
                 @test get_sfunc(inst2) isa Cat
+                # ensure has_timeoffset returns false
+                @test !has_timeoffset(net, v, v)
             end
         end
 
@@ -152,7 +154,7 @@ wienerprocess = WienerProcess(0.1)
                 v = MyModel()(:v)
                 p = Placeholder{Int}(:p)
                 net = DynamicNetwork(Variable[v], VariableGraph(), 
-                    VariableGraph(v => [p]), Placeholder[p])
+                    VariableGraph(v => [p]), VariableParentTimeOffset(), Placeholder[p])
                 run = Runtime(net)
                 inst1 = instantiate!(run, p, 1)
                 inst2 = instantiate!(run, v, 2)
@@ -173,6 +175,23 @@ wienerprocess = WienerProcess(0.1)
                 @test get_sfunc(inst3).x == (2,3)
                 @test get_sfunc(inst5).x == (4,5)
             end
+
+            @testset "passes the correct offset times to the model" begin
+                u = MyModel()(:u)
+                v = MyModel()(:v)
+                net = DynamicNetwork(Variable[u,v], VariableGraph(), VariableGraph(v => [u], u => [u]), VariableParentTimeOffset([Pair(v, u)]))
+                run = Runtime(net)
+                uinst1 = instantiate!(run, u, 0)
+                inst1 = instantiate!(run, v, 1)
+                inst3 = instantiate!(run, v, 3)
+                uinst4 = instantiate!(run, u, 4)
+                uinst5 = instantiate!(run, u, 5)
+                inst5 = instantiate!(run, v, 5)
+                # Each instance should have a previous time of the previously existing latest instance, if any
+                @test get_sfunc(inst3).x == (0,3)
+                @test get_sfunc(inst5).x == (4,5)
+            end
+
         end
     end
 

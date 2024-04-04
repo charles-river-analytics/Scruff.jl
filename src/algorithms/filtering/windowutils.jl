@@ -93,7 +93,8 @@ function instant_runtime_from_instances(dynrun::DynamicRuntime, dyninsts::Vector
         dynpars = get_transition_parents(dynnet, dynnode)
         for dynpar in dynpars
             # Find the most recent parent instance equal or before this variable's instance
-            parinst = latest_instance_before(dynrun, dynpar, insttime, dynpar != dynnode)
+            time_offset = has_timeoffset(dynnet, dynnode, dynpar)
+            parinst = latest_instance_before(dynrun, dynpar, insttime, !time_offset)
             if isnothing(parinst)
                 error("Variable does not have parent in instances")
             elseif !(parinst in dyninsts)
