@@ -366,7 +366,12 @@ end
 function ensure_all!(runtime::DynamicRuntime, time = current_time(runtime)) :: Dict{Symbol, Instance}
     insts = Dict{Symbol, Instance}()
     for node in get_nodes(runtime)
-        insts[node.name] = ensure_instance!(runtime, node, time)
+        try
+            insts[node.name] = ensure_instance!(runtime, node, time)
+        catch ex
+            @error("Error $ex on $(node.name), $node")
+            rethrow(ex)
+        end
     end
     return insts
 end

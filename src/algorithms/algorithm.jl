@@ -3,7 +3,8 @@ export
     marginal,
     joint,
     probability,
-    mean
+    mean,
+    variance
 
 """
     Algorithm
