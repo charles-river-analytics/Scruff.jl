@@ -32,7 +32,8 @@ function create_window(::SyncWindow, runtime::Runtime, variables_to_sample::Vect
     for v in variables_to_sample
         pars = get_transition_parents(net, v)
         for p in pars
-            t = get_time(latest_instance_before(runtime, p, time, p != v))
+            time_offset = has_timeoffset(net, v, p)
+            t = get_time(latest_instance_before(runtime, p, time, !time_offset))
             prevtime = min(prevtime, t)
         end
     end

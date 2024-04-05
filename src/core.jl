@@ -16,6 +16,7 @@ export
     ValueTyped,
     Variable,
     VariableGraph,
+    VariableParentTimeOffset,
     get_initial_graph,
     get_transition_graph,
     get_children,
@@ -29,6 +30,7 @@ export
     get_variables,
     get_placeholders,
     get_nodes,
+    has_timeoffset,
     input_type,
     make_initial,
     make_transition,
@@ -187,6 +189,14 @@ get_name(node::Node) = node.name
 VariableGraph = Dict{Node, Vector{Node}}
 
 """
+    VariableParentTimeOffset = Set{Pair{Node, Node}}
+
+Represents whether a child-parent pair of nodes is time-offset;
+if they are time-offset, they will be in this set.
+"""
+VariableParentTimeOffset = Set{Pair{Node, Node}}
+
+"""
     abstract type Network{I,J,O} 
 
 Collects variables, with placeholders for inputs, and defined outputs,
@@ -284,8 +294,11 @@ struct InstantNetwork{I,O} <: Network{I,Nothing,O}
     placeholders::Vector{<:Placeholder}
     outputs::Vector{<:Variable} # outputs is a subset of variables
     parents::VariableGraph
-    function InstantNetwork(variables::Vector{<:Variable}, parents::VariableGraph,
-                placeholders::Vector{<:Placeholder} = Placeholder[], outputs::Vector{<:Variable} = Variable[])
+    function InstantNetwork(
+            variables::Vector{<:Variable}, 
+            parents::VariableGraph, 
+            placeholders::Vector{<:Placeholder} = Placeholder[], 
+            outputs::Vector{<:Variable} = Variable[])
         I = Tuple{[value_type(p) for p in placeholders]...}
         O = Tuple{[output_type(v) for v in outputs]...}
         return new{I,O}(variables, placeholders, outputs, complete_graph!(variables, parents))
@@ -303,6 +316,8 @@ get_initial_graph(n::InstantNetwork) = n.parents
 get_transition_graph(::InstantNetwork) = error("InstantNetwork does not have a transition graph")
 get_parents(n::InstantNetwork, v) = get_initial_parents(n,v)
 get_children(n::InstantNetwork, v) = get_initial_children(n,v)
+has_timeoffset(n::InstantNetwork, child::Node, parent::Node) = false
+
 
 """
     DynamicNetwork{I,J,O} <: Network{I,J,O}
@@ -317,8 +332,12 @@ struct DynamicNetwork{I,J,O} <: Network{I,J,O}
     outputs::Vector{<:Variable} # outputs is a subset of variables
     initial_parents::VariableGraph
     transition_parents::VariableGraph
-    function DynamicNetwork(variables::Vector{<:Variable}, 
-                initial_parents::VariableGraph, transition_parents::VariableGraph,
+    parents_timeoffset::VariableParentTimeOffset
+    function DynamicNetwork(
+                variables::Vector{<:Variable}, 
+                initial_parents::VariableGraph, 
+                transition_parents::VariableGraph,
+                parents_timeoffset::VariableParentTimeOffset = Set{Pair{Node, Node}}(),
                 init_placeholders::Vector{<:Placeholder} = Placeholder[], 
                 trans_placeholders::Vector{<:Placeholder} = Placeholder[], 
                 outputs::Vector{<:Variable} = Variable[])
@@ -326,7 +345,7 @@ struct DynamicNetwork{I,J,O} <: Network{I,J,O}
         J = Tuple{[value_type(p) for p in trans_placeholders]...}
         O = Tuple{[output_type(v) for v in outputs]...}
         return new{I,J,O}(variables, init_placeholders, trans_placeholders, outputs, 
-            complete_graph!(variables, initial_parents), complete_graph!(variables, transition_parents))
+            complete_graph!(variables, initial_parents), complete_graph!(variables, transition_parents), parents_timeoffset)
     end
 end
 
@@ -338,6 +357,7 @@ get_nodes(n::DynamicNetwork) =
 get_outputs(n::DynamicNetwork) = n.outputs
 get_initial_graph(n::DynamicNetwork) = n.initial_parents
 get_transition_graph(n::DynamicNetwork) = n.transition_parents
+has_timeoffset(n::DynamicNetwork, child::Node, parent::Node) = child == parent || Pair(child, parent) in n.parents_timeoffset
 
 function assign_times(parents::Dict{Variable, Vector{Node}},
                       timed_varplaces::Dict{Node,Time})::Dict{Node,Time}
