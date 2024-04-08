@@ -287,7 +287,7 @@ end
         jinds = cartesian_product(jar)
         result = zeros(Float64, length(parranges[parent_ix]))
         # Need to make sure the target parent range is a Vector{T} rather than a Vector{Any}
-        T = typeof(parranges[parent_ix][1])
+        T = typejoin([typeof(x) for x in parranges[parent_ix]]...)
         target_parrange :: Vector{T} = parranges[parent_ix]
 
         if parent_ix <= length(iranges)

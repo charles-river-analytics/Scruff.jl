@@ -168,7 +168,7 @@ end
 
         # We need to make sure the message is correctly typed to the output type of the appropriate parent
         # Need to make sure the target parent range is a Vector{T} rather than a Vector{Any}
-        T = typeof(parranges[parent_ix][1])
+        T = typejoin([typeof(x) for x in parranges[parent_ix]]...)
         target_parrange :: Vector{T} = parranges[parent_ix]
         if parent_ix == 1
             # We send a lambda message to the selector parent
