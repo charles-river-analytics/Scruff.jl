@@ -192,7 +192,7 @@ end
         # For a particular parent, we consider all possible values of the other parents.
         # We make a joint argument p, and compute pi(other parents) * lambda(f(p)).
         # Need to make sure the target parent range is a Vector{T} rather than a Vector{Any}
-        T = typeof(parranges[parent_ix][1])
+        T = typejoin([typeof(x) for x in parranges[parent_ix]]...)
         target_parrange :: Vector{T} = parranges[parent_ix]
         otherranges = [r for r in parranges]
         deleteat!(otherranges, parent_ix)
