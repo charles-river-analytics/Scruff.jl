@@ -27,7 +27,7 @@ end
     function support(::Generate{O}, 
                     parranges::NTuple{N,Vector}, 
                     size::Integer, 
-                    curr::Vector{<:O}) where {J<:Tuple,O,N}
+                    curr::Vector{<:O}) where {O,N}
 
         result = Vector{O}()
         for sf in parranges[1]

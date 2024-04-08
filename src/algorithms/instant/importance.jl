@@ -246,18 +246,20 @@ function infer(algorithm::Importance, runtime::InstantRuntime,
     if has_state(runtime, :particles)
         particles = get_state(runtime, :particles)
         # Copy over only values of nodes in the current runtime
+        psamples = particles.samples
+        plog_weights = particles.log_weights
         for i in 1:algorithm.num_particles
             if length(particles.samples) > 0
                 index_into_particles = (i-1) % length(particles.samples) + 1
                 newsample = Dict{Symbol, Any}()
-                oldsample = particles.samples[index_into_particles]
+                oldsample = psamples[index_into_particles]
                 for n in nodes
                     if n.name in keys(oldsample)
                         newsample[n.name] = oldsample[n.name]
                     end
                 end
                 push!(samples, newsample)
-                push!(lws, particles.log_weights[index_into_particles])
+                push!(lws, plog_weights[index_into_particles])
             else
                 push!(samples, Dict{Symbol, Any}())
                 push!(lws, 0.0)

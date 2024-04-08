@@ -126,7 +126,7 @@ function add_analysis!(net,sym,val)
     get!(network_analysis, net, Dict{Symbol, Any}())[sym] = val
 end
 
-function expander_probs(runtime::Runtime, fn::Function, v::Variable, depth::Int) where {I,O}
+function expander_probs(runtime::Runtime, fn::Function, v::Variable, depth::Int) 
     net = get_network(runtime)
     par = get_parents(net, v)[1]
     parinst = current_instance(runtime, par)
