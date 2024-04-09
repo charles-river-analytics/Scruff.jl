@@ -19,19 +19,19 @@ using MacroTools
 import Parameters: with_kw, @unpack
 
 __policy = nothing
-num_imps = Dict()
+__num_imps = Dict()
 
 display = false
 
-# This is used to give each impl struct a unique name
+# This is used to give each impl struct a unique name if not specified
 function get_and_inc_imp_number(imp_type)
-    global num_imps
-    if ~(imp_type in keys(num_imps))
-        num_imps[imp_type] = 0
+    global __num_imps
+    if ~(imp_type in keys(__num_imps))
+        __num_imps[imp_type] = 0
     end
 
-    num_imps[imp_type] += 1
-    return num_imps[imp_type]
+    __num_imps[imp_type] += 1
+    return __num_imps[imp_type]
 end
 
 function get_policy()
@@ -94,6 +94,7 @@ function (a(policy::Policy, x::I; )::O) where {I,O}
     imp = get_imp(policy, A, x::I)
     return a(imp, x::I)
 end
+export A, a
 ```
 """
 macro interface(interface_exp)
