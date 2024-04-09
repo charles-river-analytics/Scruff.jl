@@ -68,7 +68,9 @@ It proposes a value for the `instance` from its sfunc, and scores it by the evid
 if any.
 """
 function rejection_proposal(runtime::Runtime, instance::VariableInstance)
-    proposer(parent_values) = (sample(get_sfunc(instance), parent_values), 0.0)
+    sfunc = get_sfunc(instance)
+    proposer(parent_values) = (sample(sfunc, parent_values), 0.0)
+    proposer
 end
     
 function _get_hard_evidence(runtime, instance)::Union{HardScore, Nothing}
@@ -152,6 +154,7 @@ LW(num_particles) = Importance(lw_proposal, num_particles)
 
 function _importance(runtime::Runtime, num_samples::Int, proposal_function::Function,
     samples::Vector{Dict{Symbol, Any}}, lws)
+
     net = runtime.network
     nodes = topsort(get_initial_graph(net))
     proposers = Function[]

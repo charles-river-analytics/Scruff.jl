@@ -108,7 +108,7 @@ function interface_macro(mod, source, interface_exp)
         println("returntype: ", R, ": ", typeof(R))
         println("where: ", W, ": ", typeof(W))
     end
-    println(stderr, f)
+    #println(stderr, f)
 
     W = isnothing(W) ? () : W
 
