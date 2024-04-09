@@ -208,14 +208,6 @@ end
 """
 
 macro impl(expr, interface_module)
-    #=
-    interface_name = get_interface_name(__module__, __source__, expr)
-    interface = A
-    interface = eval(:A)
-    interface = eval(interface_name)
-    interface_module = eval(:(parentmodule($interface_name)))
-    println("Module: $(interface_module)")
-    =#
     return esc(impl(__module__, __source__, expr, interface_module))
 end
 
@@ -270,17 +262,7 @@ end
 
 function impl(mod, source, implement_expr, interface_module)
     #println("impl_expr: $(implement_expr.head), $(implement_expr.args)")
-    #impl_parts::Vector{Tuple{LineNumberNode, <:Expr}} = collect([(implement_expr.args[2*i - 1], implement_expr.args[2*i]) for i in 1:Int(length(implement_expr.args) / 2)])
     impl_parts = collect([(implement_expr.args[2*i - 1], implement_expr.args[2*i]) for i in 1:Int(length(implement_expr.args) / 2)])
-
-    #=
-    line_number_node, block = implement_expr.args[1], implement_expr.args[2]
-    if block.head == :block
-        impl_parts = [(block.args[i], block.args[i + 1]) for i in range(length(block.args) / 2)]
-    else
-        impl_parts = [(line_number_node, block)]
-    end
-    =#
 
     #println("impl_parts: $(impl_parts)")
     first_ln_node = first(impl_parts[1])
