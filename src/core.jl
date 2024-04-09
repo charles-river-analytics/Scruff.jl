@@ -236,12 +236,15 @@ end
 
 Returns the node with the given name, or `nothing`.
 """
-function get_node(n::Network, name::Symbol)::Union{Node, Nothing}
+function get_node(n::Network, name::Symbol; throw_missing=false)::Union{Node, Nothing}
     vs = get_nodes(n)
     for v in vs
         if v.name == name
             return v
         end
+    end
+    if throw_missing
+        throw(KeyError(name))
     end
     return nothing
 end

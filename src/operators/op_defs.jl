@@ -44,9 +44,9 @@ MultiInterface.get_imp(::Nothing, args...) = nothing
 end
 
 @interface support(sf::SFunc{I,O}, 
-                    parranges::NTuple{N,Vector}, 
-                    size::Integer, 
-                    curr::Vector{<:O}) where {I,O,N}
+                   parranges::NTuple{N,Vector}, 
+                   size::Integer, 
+                   curr::Vector{<:O}) where {I,O,N}
 
 function importance_sample end
 

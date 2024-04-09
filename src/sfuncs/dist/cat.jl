@@ -63,7 +63,7 @@ mutable struct Cat{O} <: Dist{O}
     function Cat(rps::Vector{<:Pair{O,<:Real}}) where O
         range = first.(rps)
         probs = last.(rps)
-        return Cat(range, probs)
+        return Cat(range, normalize(probs))
     end
 end
 
@@ -88,7 +88,7 @@ end
 @impl begin
     struct CatSample end
     function sample(sf::Cat{O}, i::Tuple{})::O where {O}
-        i = rand(Categorical(normalize(sf.params)))
+        i = rand(Categorical(sf.params))
         return sf.range[i]
     end
 end
