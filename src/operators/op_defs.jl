@@ -6,8 +6,7 @@ export
     support_quality_rank,
     support_quality_from_rank,
     VectorOption,
-    Option,
-    get_log_score
+    Option
 
 # These are the new operator definitions where the type signature is specified
 
