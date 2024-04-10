@@ -5,9 +5,14 @@ using ..MultiInterface
 
 using ...Scruff
 using ..Utils
+using ..Operators
 import ..Operators
 Operators.@import_operators()
 import ..Operators:  __OptVec, Support, SupportQuality
+
+macro impl(expr)
+    return esc(MultiInterface.impl(__module__, __source__, expr, Operators))
+end
 
 include("sfuncs/dist/dist.jl")
 include("sfuncs/dist/cat.jl")
