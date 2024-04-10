@@ -135,7 +135,7 @@ end
 
     function bounded_probs(
             sf::Normal, 
-            range::__OptVec{Float64}, 
+            range::VectorOption{Float64}, 
             parranges::NTuple{N,Vector})::Tuple{Vector{<:AbstractFloat}, Vector{<:AbstractFloat}} where {N}
         
         intervals = make_intervals(range)
@@ -193,7 +193,7 @@ end
 @impl begin
     struct NormalComputePi end
 
-    function compute_pi(sf::Normal, range::__OptVec{Float64}, parranges::NTuple{N,Vector}, 
+    function compute_pi(sf::Normal, range::VectorOption{Float64}, parranges::NTuple{N,Vector}, 
             incoming_pis::Tuple)::Dist{Float64} where {N}
         Cat(range, collect(map(x -> Distributions.pdf(dist(sf), x), range)))
     end
@@ -203,7 +203,7 @@ end
 @impl begin
     struct NormalExpectedStats end
 
-    function expected_stats(sf::Normal, range::__OptVec{Float64}, parranges::NTuple{N,Vector},
+    function expected_stats(sf::Normal, range::VectorOption{Float64}, parranges::NTuple{N,Vector},
             pis::NTuple{M,Dist},
             child_lambda::Score{Float64}) where {N,M}
 

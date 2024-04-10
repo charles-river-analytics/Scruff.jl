@@ -21,7 +21,7 @@ end
     
     function send_lambda(sf::Dist{T},
                        lambda::Score{<:T},
-                       range::__OptVec{<:T},
+                       range::VectorOption{<:T},
                        parranges::NTuple{N,Vector},
                        incoming_pis::Tuple,
                        parent_idx::Integer)::Score where {N,T}

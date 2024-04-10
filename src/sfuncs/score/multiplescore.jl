@@ -5,11 +5,12 @@ struct MultipleScore{I} <: Score{I}
     components :: Vector{<:Score{I}}
 end
 
-function get_log_score(ms::MultipleScore{I}, i::I) where I
-    tot = 0.0
-    for m in ms.components
-        tot += get_log_score(m, i)
-    end
-    tot
+@impl begin
+  function get_log_score(ms::MultipleScore{I}, i::I) where I
+      tot = 0.0
+      for m in ms.components
+          tot += get_log_score(m, i)
+      end
+      tot
+  end
 end
-

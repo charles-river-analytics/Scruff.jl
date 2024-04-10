@@ -86,7 +86,7 @@ end
     end
 
     function make_factors(sf::Extend{I,J,O},
-            range::__OptVec{<:O}, 
+            range::VectorOption{<:O}, 
             parranges::NTuple{N,Vector}, 
             id, 
             parids::Tuple)::Tuple{Vector{<:Scruff.Utils.Factor}, Vector{<:Scruff.Utils.Factor}} where {I<:Tuple{Any},J,O,N}
@@ -101,7 +101,7 @@ end
     struct ExtendComputePi end
 
     function compute_pi(sf::Extend{I,J,O},
-            range::__OptVec{<:O}, 
+            range::VectorOption{<:O}, 
             parranges::NTuple{N,Vector}, 
             incoming_pis::Tuple)::Dist{<:O} where {N,J,I<:Tuple{Any},O}
     
@@ -116,7 +116,7 @@ end
 
     function send_lambda(sf::Extend{I,J,O},
                        lambda::Score{<:O},
-                       range::__OptVec{<:O},
+                       range::VectorOption{<:O},
                        parranges::NTuple{N,Vector},
                        incoming_pis::Tuple,
                        parent_idx::Integer)::Score where {I<:Tuple{Any},N,J,O}
@@ -163,7 +163,7 @@ end
     struct ExtendExpectedStats end
     
     function expected_stats(sf::Extend{I,J,O},
-                            range::__OptVec{<:O}, 
+                            range::VectorOption{<:O}, 
                             parranges::NTuple{N,Vector},
                             pis::NTuple{M,Dist},
                             child_lambda::Score{<:O}) where {I<:Tuple{Any},J,O,N,M}

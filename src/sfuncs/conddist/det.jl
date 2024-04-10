@@ -117,7 +117,7 @@ end
     struct DetBoundedProbs end
 
     function bounded_probs(sf::Det{I,O}, 
-                         range::__OptVec{<:O}, 
+                         range::VectorOption{<:O}, 
                          parranges::NTuple{N,Vector})::
                 Tuple{Vector{<:AbstractFloat}, Vector{<:AbstractFloat}} where {I,O,N}
         ps = cartesian_product(parranges)
@@ -136,7 +136,7 @@ end
     struct DetMakeFactors end
 
     function make_factors(sf::Det{I,O},
-                        range::__OptVec{<:O}, 
+                        range::VectorOption{<:O}, 
                         parranges::NTuple{N,Vector}, 
                         id, 
                         parids::Tuple)::Tuple{Vector{<:Scruff.Utils.Factor}, Vector{<:Scruff.Utils.Factor}} where {I,O,N}
@@ -157,7 +157,7 @@ end
     struct DetComputePi end
 
     function compute_pi(sf::Det{I,O},
-                     range::__OptVec{<:O}, 
+                     range::VectorOption{<:O}, 
                      parranges::NTuple{N,Vector}, 
                      incoming_pis::Tuple)::Dist{<:O} where {N,I,O}
 
@@ -184,7 +184,7 @@ end
 
     function send_lambda(sf::Det{I,O},
                        lambda::Score{<:O},
-                       range::__OptVec{<:O},
+                       range::VectorOption{<:O},
                        parranges::NTuple{N,Vector},
                        incoming_pis::Tuple,
                        parent_ix::Integer)::Score where {N,I,O}
@@ -238,7 +238,7 @@ end
 @impl begin
     struct DetExpectedStats end
     function expected_stats(sf::Det{I,O},
-                          range::__OptVec{<:O}, 
+                          range::VectorOption{<:O}, 
                           parranges::NTuple{N,Vector},
                           pis::NTuple{M,Dist},
                           child_lambda::Score{<:O}) where {I,O,N,M}

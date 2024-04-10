@@ -68,7 +68,7 @@ end
 @impl begin
     struct GenerateComputePi end
     function compute_pi(::Generate{O},
-                     range::__OptVec{<:O}, 
+                     range::VectorOption{<:O}, 
                      parranges::NTuple{N,Vector}, 
                      incoming_pis::Tuple)::Dist{<:O} where {N,O}
 
@@ -91,7 +91,7 @@ end
 
     function send_lambda(::Generate{O},
                        lambda::Score{<:O},
-                       range::__OptVec{<:O},
+                       range::VectorOption{<:O},
                        parranges::NTuple{N,Vector},
                        incoming_pis::Tuple,
                        parent_idx::Integer)::Score where {N,O}

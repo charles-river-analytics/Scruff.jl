@@ -5,15 +5,16 @@ export
     support_quality,
     support_quality_rank,
     support_quality_from_rank,
-    __OptVec,
-    __Opt
+    VectorOption,
+    Option,
+    get_log_score
 
 # These are the new operator definitions where the type signature is specified
 
-"""__OptVec{T} = Union{Vector{Union{}}, Vector{T}}"""
-__OptVec{T} = Union{Vector{Union{}}, Vector{T}}
-"""__Opt{T} = Union{Nothing, T}"""
-__Opt{T} = Union{Nothing, T}
+"""VectorOption{T} = Union{Vector{Union{}}, Vector{T}}"""
+VectorOption{T} = Union{Vector{Union{}}, Vector{T}}
+"""Option{T} = Union{Nothing, T}"""
+Option{T} = Union{Nothing, T}
 
 # to support 
 MultiInterface.get_imp(::Nothing, args...) = nothing
@@ -24,8 +25,8 @@ MultiInterface.get_imp(::Nothing, args...) = nothing
 @interface sample(sf::SFunc{I,O}, i::I)::O where {I,O}
 @interface sample_logcpdf(sf::SFunc{I,O}, i::I)::Tuple{O, AbstractFloat} where {I,O}
 # @interface invert(sf::SFunc{I,O}, o::O)::I where {I,O}
-@interface lambda_msg(sf::SFunc{I,O}, i::SFunc{<:__Opt{Tuple{}}, O})::SFunc{<:__Opt{Tuple{}}, I} where {I,O}
-@interface marginalize(sf::SFunc{I,O}, i::SFunc{<:__Opt{Tuple{}}, I})::SFunc{<:__Opt{Tuple{}}, O} where {I,O}
+@interface lambda_msg(sf::SFunc{I,O}, i::SFunc{<:Option{Tuple{}}, O})::SFunc{<:Option{Tuple{}}, I} where {I,O}
+@interface marginalize(sf::SFunc{I,O}, i::SFunc{<:Option{Tuple{}}, I})::SFunc{<:Option{Tuple{}}, O} where {I,O}
 @interface logcpdf(sf::SFunc{I,O}, i::I, o::O)::AbstractFloat where {I,O}
 @interface cpdf(sf::SFunc{I,O}, i::I, o::O)::AbstractFloat where {I,O}
 @interface log_cond_prob_plus_c(sf::SFunc{I,O}, i::I, o::O)::AbstractFloat where {I,O}
@@ -83,11 +84,11 @@ end
 end
 
 @interface bounded_probs(sf::SFunc{I,O}, 
-                         range::__OptVec{<:O}, 
+                         range::VectorOption{<:O}, 
                          parranges::NTuple{N,Vector})::Tuple{Vector{<:AbstractFloat}, Vector{<:AbstractFloat}} where {I,O,N}
 
 @interface make_factors(sf::SFunc{I,O},
-                        range::__OptVec{<:O}, 
+                        range::VectorOption{<:O}, 
                         parranges::NTuple{N,Vector}, 
                         id, 
                         parids::Tuple)::Tuple{Vector{<:Scruff.Utils.Factor}, Vector{<:Scruff.Utils.Factor}} where {I,O,N}
@@ -98,7 +99,7 @@ end
 # TODO create an abstract type Stats{I,O}
 # (range, parranges, pi's, lambda's)  
 @interface expected_stats(sf::SFunc{I,O},
-                          range::__OptVec{<:O}, 
+                          range::VectorOption{<:O}, 
                           parranges::NTuple{N,Vector},
                           pis::NTuple{M,Dist},
                           child_lambda::Score{<:O}) where {I,O,N,M}
@@ -107,39 +108,39 @@ end
 @interface maximize_stats(sf::SFunc, stats)
 =#
 @interface compute_bel(sf::SFunc{I,O},
-                      range::__OptVec{<:O}, 
+                      range::VectorOption{<:O}, 
                       pi::Dist{<:O}, 
                       lambda::Score)::Dist{<:O} where {I,O}
 
 @interface compute_lambda(sf::SFunc,
-                          range::__OptVec, 
+                          range::VectorOption, 
                           lambda_msgs::Vector{<:Score})::Score
 
 @interface send_pi(sf::SFunc{I,O},
-                   range::__OptVec{O}, 
+                   range::VectorOption{O}, 
                    bel::Dist{O}, 
                    lambda_msg::Score)::Dist{<:O} where {I,O}
 
 @interface outgoing_pis(sf::SFunc,
-                        range::__OptVec, 
+                        range::VectorOption, 
                         bel::Dist, 
-                        incoming_lambdas::__OptVec{<:Score})::Vector{<:Dist}
+                        incoming_lambdas::VectorOption{<:Score})::Vector{<:Dist}
 
 @interface outgoing_lambdas(sf::SFunc{I,O},
                   lambda::Score,
-                  range::__OptVec,
+                  range::VectorOption,
                   parranges::NTuple{N,Vector},
                   incoming_pis::Tuple)::Vector{<:Score} where {N,I,O}
 
 @interface compute_pi(sf::SFunc{I,O},
-                     range::__OptVec{O}, 
+                     range::VectorOption{O}, 
                      parranges::NTuple{N,Vector}, 
                      incoming_pis::Tuple)::Dist{<:O} where {N,I,O}
 
 
 @interface send_lambda(sf::SFunc{I,O},
                        lambda::Score,
-                       range::__OptVec,
+                       range::VectorOption,
                        parranges::NTuple{N,Vector},
                        incoming_pis::Tuple,
                        parent_idx::Integer)::Score where {N,I,O}
