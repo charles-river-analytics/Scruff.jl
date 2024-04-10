@@ -1,6 +1,6 @@
 module RTUtils
 
-using ...Scruff
+using ..Scruff
 using ..Utils
 using ..SFuncs
 
