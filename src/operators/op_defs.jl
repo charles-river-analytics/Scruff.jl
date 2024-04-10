@@ -2,7 +2,6 @@ using ..MultiInterface
 
 export
     importance_sample,
-    support_quality,
     support_quality_rank,
     support_quality_from_rank,
     VectorOption,
