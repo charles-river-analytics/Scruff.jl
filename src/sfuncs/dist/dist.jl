@@ -29,3 +29,10 @@ end
         SoftScore(Float64[], Float64[])
     end
 end
+
+include("cat.jl")
+include("constant.jl")
+include("flip.jl")
+include("normal.jl")
+include("uniform.jl")
+#include("distributions.jl")

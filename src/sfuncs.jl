@@ -14,20 +14,8 @@ macro impl(expr)
 end
 
 include("sfuncs/dist/dist.jl")
-include("sfuncs/dist/cat.jl")
-include("sfuncs/dist/constant.jl")
-include("sfuncs/dist/flip.jl")
-include("sfuncs/dist/normal.jl")
-include("sfuncs/dist/uniform.jl")
 
 include("sfuncs/score/score.jl")
-include("sfuncs/score/hardscore.jl")
-include("sfuncs/score/softscore.jl")
-include("sfuncs/score/multiplescore.jl")
-include("sfuncs/score/logscore.jl")
-include("sfuncs/score/functionalscore.jl")
-include("sfuncs/score/normalscore.jl")
-include("sfuncs/score/parzen.jl")
 
 include("sfuncs/util/extend.jl")
 
