@@ -34,6 +34,8 @@ MultiInterface.get_imp(::Nothing, args...) = nothing
 @interface variance(sf::SFunc{I,O}, i::I)::O where {I,O}
 @interface get_score(sf::SFunc{Tuple{I},O}, i::I)::AbstractFloat where {I,O}
 @interface get_log_score(sf::SFunc{Tuple{I},O}, i::I)::AbstractFloat where {I,O}
+# Return a new SFunc that is the result of summing samples from each constituent SFunc
+@interface sumsfs(fs::NTuple{N, <:SFunc{I, O}})::SFunc{I, O} where {N, I, O}
 
 @impl begin
     struct SFuncExpectation end
