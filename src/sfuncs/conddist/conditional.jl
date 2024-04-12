@@ -159,7 +159,7 @@ end
     end
 
     function make_factors(sf::Conditional{I,J,K,O},
-                        range::__OptVec{<:O}, 
+                        range::VectorOption{<:O}, 
                         parranges::NTuple{N,Vector}, 
                         id, 
                         parids::Tuple)::Tuple{Vector{<:Scruff.Utils.Factor}, Vector{<:Scruff.Utils.Factor}} where {I,J,K,O,N}
@@ -240,7 +240,7 @@ end
     struct ConditionalComputePi end
 
     function compute_pi(sf::Conditional{I,J,K,O},
-                     range::__OptVec{<:O}, 
+                     range::VectorOption{<:O}, 
                      parranges::NTuple{N,Vector}, 
                      incoming_pis::Tuple)::Dist{<:O} where {N,I,J,K,O}
 
@@ -275,7 +275,7 @@ end
 
     function send_lambda(sf::Conditional{I,J,K,O},
                        lambda::Score{<:O},
-                       range::__OptVec{<:O},
+                       range::VectorOption{<:O},
                        parranges::NTuple{N,Vector},
                        incoming_pis::Tuple,
                        parent_ix::Integer)::Score where {N,I,J,K,O}

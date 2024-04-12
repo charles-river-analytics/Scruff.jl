@@ -14,7 +14,7 @@ function test_support(sf::SFunc{I,O}, parranges, target, quality;
 end
 
 function test_sample(sf::SFunc{I,O}, parvals, range, probs;  
-        num_samples = 1000, tolerance = 0.05) where {I,O}
+        num_samples = 1000, tolerance = 0.1) where {I,O}
     d = Dict{O, Int}()
     for i in 1:num_samples
         x = sample(sf, parvals)

@@ -66,7 +66,7 @@ end
 @impl begin
     struct MixtureExpectedStats end
     function expected_stats(sf::Mixture{I,O},
-                          range::__OptVec{<:O}, 
+                          range::VectorOption{<:O}, 
                           parranges::NTuple{N,Vector},
                           pis::NTuple{M,Dist},
                           child_lambda::Score{<:O}) where {I,O,N,M}
@@ -115,7 +115,7 @@ end
     end
 
     function make_factors(sf::Mixture{I,O},
-                        range::__OptVec{<:O}, 
+                        range::VectorOption{<:O}, 
                         parranges::NTuple{N,Vector}, 
                         id, 
                         parids::Tuple)::Tuple{Vector{<:Scruff.Utils.Factor}, Vector{<:Scruff.Utils.Factor}} where {I,O,N}
@@ -159,7 +159,7 @@ end
 @impl begin
     struct MixtureComputePi end
     function compute_pi(sf::Mixture{I,O},
-                     range::__OptVec{<:O}, 
+                     range::VectorOption{<:O}, 
                      parranges::NTuple{N,Vector}, 
                      incoming_pis::Tuple)::Dist{<:O} where {N,I,O}
         function f(i)
@@ -176,7 +176,7 @@ end
     struct MixtureSendLambda end
     function send_lambda(sf::Mixture{I,O},
                        lambda::Score{<:O},
-                       range::__OptVec{<:O},
+                       range::VectorOption{<:O},
                        parranges::NTuple{N,Vector},
                        incoming_pis::Tuple,
                        parent_ix::Integer)::Score where {N,I,O}

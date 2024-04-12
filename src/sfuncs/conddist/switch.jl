@@ -117,7 +117,7 @@ end
     struct SwitchComputePi end
 
     function compute_pi(sf::Switch{N,I,K,O},
-                     range::__OptVec{<:O}, 
+                     range::VectorOption{<:O}, 
                      parranges::NTuple{M,Vector}, 
                      incoming_pis::Tuple)::Dist{<:O} where {M,N,I,K,O}
         result = zeros(Float64, length(range))
@@ -143,7 +143,7 @@ end
 
     function send_lambda(sf::Switch{N,I,K,O},
                        lambda::Score{<:O},
-                       range::__OptVec{<:O},
+                       range::VectorOption{<:O},
                        parranges::NTuple{M,Vector},
                        incoming_pis::Tuple,
                        parent_ix::Integer)::Score where {M,N,I,K,O}

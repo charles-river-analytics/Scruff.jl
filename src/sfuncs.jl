@@ -3,12 +3,11 @@ module SFuncs
 using Base: reinit_stdio
 using ..MultiInterface
 
-using ...Scruff
+using ..Scruff
 using ..Utils
 using ..Operators
 import ..Operators
-Operators.@import_operators()
-import ..Operators:  __OptVec, Support, SupportQuality
+import ..Operators: VectorOption, Support, SupportQuality
 
 macro impl(expr)
     return esc(MultiInterface.impl(__module__, __source__, expr, Operators))

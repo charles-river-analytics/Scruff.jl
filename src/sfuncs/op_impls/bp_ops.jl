@@ -8,7 +8,7 @@ using Folds
 @impl begin
     struct SFuncComputeLambda end
 
-    function compute_lambda(sf::SFunc, range::__OptVec, lambda_msgs::Vector{<:Score})::Score
+    function compute_lambda(sf::SFunc, range::VectorOption, lambda_msgs::Vector{<:Score})::Score
     
         if isempty(lambda_msgs)
             ps = zeros(Float64, length(range))
@@ -26,7 +26,7 @@ end
 @impl begin
     struct SFuncComputeBel end
     
-    function compute_bel(sf::SFunc{I,O}, range::__OptVec{O},  pi::Dist{O}, lambda::Score)::Dist{<:O} where {I,O}
+    function compute_bel(sf::SFunc{I,O}, range::VectorOption{O},  pi::Dist{O}, lambda::Score)::Dist{<:O} where {I,O}
         ps = [cpdf(pi, (), x) * get_score(lambda, x) for x in range]
         return Cat(range, normalize(ps))
     end
@@ -35,7 +35,7 @@ end
 @impl begin
     struct SFuncSendPi end
     
-    function send_pi(sf::SFunc{I,O}, range::__OptVec{O}, bel::Dist{O}, lambda_msg::Score)::Dist{<:O} where {I,O}
+    function send_pi(sf::SFunc{I,O}, range::VectorOption{O}, bel::Dist{O}, lambda_msg::Score)::Dist{<:O} where {I,O}
         # pi_msg = [get_score(bel, x) / max.(1e-8, get_score(lambda_msg, x)) for x in range]
         f(x,y) = y == -Inf ? -Inf : x - y
         ps = [f(logcpdf(bel, (), x), get_log_score(lambda_msg, x)) for x in range]
@@ -50,8 +50,8 @@ end
 @impl begin
     struct SFuncOutgoingPis end
 
-    function outgoing_pis(sf::SFunc, range::__OptVec, bel::Dist, 
-            incoming_lambdas::__OptVec{<:Score})::Vector{<:Dist} 
+    function outgoing_pis(sf::SFunc, range::VectorOption, bel::Dist, 
+            incoming_lambdas::VectorOption{<:Score})::Vector{<:Dist} 
         return [send_pi(sf, range, bel, l) for l in incoming_lambdas]
     end
 end
@@ -61,7 +61,7 @@ end
 
     function outgoing_lambdas(sf::SFunc{I,O},
         lambda::Score,
-        range::__OptVec,
+        range::VectorOption,
         parranges::NTuple{N,Vector},
         incoming_pis::Tuple)::Vector{<:Score} where {N,I,O}
     
