@@ -29,7 +29,7 @@ MultiInterface.get_imp(::Nothing, args...) = nothing
 @interface cpdf(sf::SFunc{I,O}, i::I, o::O)::AbstractFloat where {I,O}
 @interface log_cond_prob_plus_c(sf::SFunc{I,O}, i::I, o::O)::AbstractFloat where {I,O}
 @interface f_expectation(sf::SFunc{I,O}, i::I, fn::Function) where {I,O}
-@interface expectation(sf::SFunc{I,O}, i::I)::O where {I,O}
+@interface expectation(sf::SFunc{I,O}, i::I) where {I,O} # This should either return some continuous relaxation of O (e.g. Ints -> Float) or there should be an op that does
 @interface variance(sf::SFunc{I,O}, i::I)::O where {I,O}
 @interface get_score(sf::SFunc{Tuple{I},O}, i::I)::AbstractFloat where {I,O}
 @interface get_log_score(sf::SFunc{Tuple{I},O}, i::I)::AbstractFloat where {I,O}
