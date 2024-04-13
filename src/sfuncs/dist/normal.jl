@@ -5,8 +5,7 @@ import Distributions
 """
     mutable struct Normal <: Dist{Float64}
 
-`Normal` defines an *sfunc* representing unconditional Gaussian distributions.  Its
-has no input, its output type is `Float64`, and its parameters are `(mean,standard deviation)`.
+`Normal` defines an *sfunc* representing unconditional Gaussian distributions.
 
 # Additional supported operators
 - `support`
