@@ -30,9 +30,9 @@ end
     end
 end
 
+include("distributions.jl")
 include("cat.jl")
 include("constant.jl")
 include("flip.jl")
 include("normal.jl")
 include("uniform.jl")
-include("distributions.jl")

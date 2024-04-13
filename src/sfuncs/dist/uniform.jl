@@ -4,19 +4,8 @@ export Uniform
 
 import Distributions
 
-mutable struct Uniform <: Dist{Float64}
-    params :: Tuple{Float64, Float64}
-    Uniform(l, u) = new((l,u))
-end
-
-lb(u::Uniform) = u.params[1]
-ub(u::Uniform) = u.params[2]
-
-mean(u::Uniform) = (lb(u) + ub(u)) / 2.0
-
-sd(u::Uniform) = (ub(u) - lb(u)) / sqrt(12.0)
-
-dist(u::Uniform) = Distributions.Uniform(lb(u), ub(u))
+const Uniform{T} = DistributionsSF{Distributions.Uniform{T}, T}
+Uniform(lb, ub) = Uniform{typeof(lb)}(lb, ub)
 
 @impl begin
     struct UniformSupport end
@@ -28,11 +17,13 @@ dist(u::Uniform) = Distributions.Uniform(lb(u), ub(u))
     )
         newsize = size - length(curr)
         result = curr
+        sfmin = support_minimum(sf, ())
+        sfmax = support_maximum(sf, ())
         if newsize > 0
-            x = lb(sf)
+            x = sfmin
             push!(result, x)
             numsteps = newsize - 1
-            step = (ub(sf) - lb(sf)) / numsteps
+            step = (sfmax - sfmin) / numsteps
             for i in 1:numsteps
                 x += step
                 push!(result, x)
@@ -42,26 +33,10 @@ dist(u::Uniform) = Distributions.Uniform(lb(u), ub(u))
     end
 end
 
-
 @impl begin
     struct UniformSupportQuality end
     function support_quality(::Uniform, parranges)
         :IncrementalSupport
-    end
-end
-
-
-@impl begin
-    struct UniformSample end
-    function sample(sf::Uniform, x::Tuple{})::Float64
-        rand(dist(sf))
-    end
-end
-
-@impl begin
-    struct UniformLogcpdf end
-    function logcpdf(sf::Uniform, i::Tuple{}, o::Float64)::AbstractFloat
-        Distributions.logpdf(dist(sf), o)
     end
 end
 
@@ -74,8 +49,8 @@ end
         range::Vector{Float64},
         ::NTuple
     )
-        l = lb(sf)
-        u = ub(sf)
+        l = support_minimum(sf, ())
+        u = support_maximum(sf, ())
         d = u - l
         n = length(range)
 
@@ -116,8 +91,3 @@ end
         Cat(range, ps)
     end
 end
-
-
-
-
-
