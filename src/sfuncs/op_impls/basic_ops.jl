@@ -17,13 +17,13 @@
 end
 
 @impl begin
-    function cpdf(sf::SFunc{I,O}, i::I, o::O)::AbstractFloat where {I,O}
+    function cpdf(sf::SFunc{I,O}, i::I, o::O) where {I,O}
         exp(logcpdf(sf, i, o))
     end
 end
 
 @impl begin
-    function logcpdf(sf::SFunc{I,O}, i::I, o::O)::AbstractFloat where {I,O}
+    function logcpdf(sf::SFunc{I,O}, i::I, o::O) where {I,O}
         log(cpdf(sf, i, o))
     end
 end

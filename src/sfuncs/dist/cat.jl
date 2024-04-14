@@ -123,7 +123,7 @@ end
 
 @impl begin
     struct CatCpdf end
-    function cpdf(sf::Cat{O}, i::Tuple{}, o::O)::AbstractFloat where {O}
+    function cpdf(sf::Cat{O}, i::Tuple{}, o::O) where {O}
         ind = get(sf.inversemap, o, 0)
         if ind == 0
             return 0.0

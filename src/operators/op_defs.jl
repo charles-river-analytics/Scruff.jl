@@ -3,6 +3,9 @@ using ..MultiInterface
 # to support 
 MultiInterface.get_imp(::Nothing, args...) = nothing
 
+# Being specific here has big perf implact due to type-stability
+const FloatType = Float64
+
 @interface forward(sf::SFunc{I,O}, i::I)::Dist{O} where {I,O}
 @interface inverse(sf::SFunc{I,O}, o::O)::Score{I} where {I,O}
 @interface is_deterministic(sf::SFunc)::Bool
@@ -11,8 +14,8 @@ MultiInterface.get_imp(::Nothing, args...) = nothing
 # @interface invert(sf::SFunc{I,O}, o::O)::I where {I,O}
 @interface lambda_msg(sf::SFunc{I,O}, i::SFunc{<:Option{Tuple{}}, O})::SFunc{<:Option{Tuple{}}, I} where {I,O}
 @interface marginalize(sfb::SFunc{X, Y}, sfa::SFunc{Y, Z})::SFunc{X, Z} where {X, Y, Z}
-@interface logcpdf(sf::SFunc{I,O}, i::I, o::O)::AbstractFloat where {I,O}
-@interface cpdf(sf::SFunc{I,O}, i::I, o::O)::AbstractFloat where {I,O}
+@interface logcpdf(sf::SFunc{I,O}, i::I, o::O)::FloatType where {I,O}
+@interface cpdf(sf::SFunc{I,O}, i::I, o::O)::FloatType where {I,O}
 @interface log_cond_prob_plus_c(sf::SFunc{I,O}, i::I, o::O)::AbstractFloat where {I,O}
 @interface f_expectation(sf::SFunc{I,O}, i::I, fn::Function) where {I,O}
 # Expectation (and others) should either return some continuous relaxation of O (e.g. Ints -> Float) or there should be another op that does
