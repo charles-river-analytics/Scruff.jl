@@ -201,7 +201,7 @@ end
     struct MixtureSample end
     function sample(sf::Mixture{I,O}, x::I)::O where {I,O}
         probs = sf.probabilities/sum(sf.probabilities)
-        cat = Categorical(probs)
+        cat = Distributions.Categorical(probs)
         which_component = rand(cat)
         component = sf.components[which_component]
         return sample(component, x)
@@ -222,7 +222,7 @@ end
     
     function expectation(sf::Mixture{I,O}, x::I)::O where {I,O}
         probs = sf.probabilities/sum(sf.probabilities)
-        cat = Categorical(probs)
+        cat = Distributions.Categorical(probs)
         which_component = rand(cat)
         component = sf.components[which_component]
         return expectation(component, x)

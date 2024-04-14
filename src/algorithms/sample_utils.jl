@@ -1,6 +1,5 @@
 import Base.length
 
-using Distributions: Categorical
 using StatsFuns: logsumexp
 using ..SFuncs: Cat
 
@@ -92,7 +91,7 @@ end
 function resample(ps::Particles, target_num_particles::Int = length(ps.samples))
     lnws = normalize_weights(ps.log_weights)
     weights = exp.(lnws)
-    selections = rand(Categorical(weights/sum(weights)), target_num_particles)
+    selections = rand(Distributions.Categorical(weights/sum(weights)), target_num_particles)
     samples = map(selections) do ind
         ps.samples[ind]
     end

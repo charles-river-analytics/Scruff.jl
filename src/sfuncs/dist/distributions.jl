@@ -54,6 +54,21 @@ end
     end
 end
 
+@impl begin
+    function support(sf::DistributionsSF{<:Distributions.DiscreteDistribution, O}, 
+                     parranges::NTuple{N, Vector}, 
+                     size::Integer, 
+                     curr::Vector{<:O}) where {O, N}
+        return Distributions.support(sf.dist)
+    end
+end
+
+@impl begin
+    function support_quality(::DistributionsSF{<:Distributions.DiscreteNonParametric}, parranges)
+        :CompleteSupport
+    end
+end
+
 # See https://juliastats.org/Distributions.jl/stable/convolution/
 ConvSupported = Union{Distributions.Bernoulli,
                       Distributions.Binomial,
