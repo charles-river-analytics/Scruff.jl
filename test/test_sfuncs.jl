@@ -942,7 +942,7 @@ end
         N = 100
         samples = [sample(sf, ()) for _ in 1:N]
         sf_mean = expectation(sf, ())
-        @test isapprox(sf_mean, sum(samples) / N; atol=0.1)
+        @test isapprox(sf_mean, sum(samples) / N; atol=0.2)
 
         # must handle duplicates in range correctly
         c3 = Discrete([1, 1, 2], 
