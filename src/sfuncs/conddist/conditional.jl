@@ -130,7 +130,7 @@ end
 @impl begin
     struct ConditionalLogcpdf end
 
-    function logcpdf(sf::Conditional{I,J,K,O}, i::K, o::O)::AbstractFloat where {I,J,K,O}
+    function logcpdf(sf::Conditional{I,J,K,O}, i::K, o::O) where {I,J,K,O}
         (ivals, jvals) = split_pars(sf, i)
         sfgen = gensf(sf,ivals)
         return logcpdf(sfgen, jvals, o)
