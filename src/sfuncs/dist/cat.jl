@@ -48,10 +48,10 @@ output value.
 # Type parameters
 - `O`: the output type of the `Cat`
 """
-mutable struct Cat{O} <: Dist{O}
+mutable struct Cat{O, T<:Real} <: Dist{O}
     range :: Vector{O}
     inversemap :: Dict{O, Int}
-    params :: Vector{<:Real}
+    params :: Vector{T}
     original_range :: Vector{O}
     """
         Cat(r::Vector{O}, ps::Vector{<:Real}) where O
@@ -63,7 +63,7 @@ mutable struct Cat{O} <: Dist{O}
     - `ps::Vector{<:Real}`: the set of probabilities for each value in `r` 
       (will be normalized on call to `sample`)
     """
-    function Cat(range::Vector{O}, params::Vector{<:Real}) where O
+    function Cat(range::Vector{O}, params::Vector{T}) where {O, T<:Real}
         @assert length(range) == length(params)
         # Handle repeated values correctly
         d = Dict{O, Float64}()
@@ -73,11 +73,11 @@ mutable struct Cat{O} <: Dist{O}
         r = collect(keys(d))
         ps = [d[x] for x in r]
         inversemap = Dict([x => i for (i,x) in enumerate(r)]) 
-        new{O}(r,inversemap,ps,range)
+        return new{O, T}(r, inversemap, ps, range)
     end
 
     function Cat(d::Dict{O, <:Real}) where O
-        Cat(collect(keys(d)), collect(values(d)))
+        return Cat(collect(keys(d)), collect(values(d)))
     end
 
     """
@@ -89,7 +89,10 @@ mutable struct Cat{O} <: Dist{O}
     function Cat(rps::Vector{<:Pair{O,<:Real}}) where O
         range = first.(rps)
         probs = last.(rps)
-        return Cat(range, normalize(probs))
+        # This should be moved up into the normal constructor, but there's a bunch of tests 
+        # using Cat to represent densities at finite sets of points...?
+        probs = normalize(probs) 
+        return Cat(range, probs)
     end
 end
 
@@ -121,10 +124,11 @@ end
 @impl begin
     struct CatCpdf end
     function cpdf(sf::Cat{O}, i::Tuple{}, o::O)::AbstractFloat where {O}
-        if o in sf.range
-            return sf.params[sf.inversemap[o]]
-        else
+        ind = get(sf.inversemap, o, 0)
+        if ind == 0
             return 0.0
+        else
+            return sf.params[ind]
         end
     end
 end

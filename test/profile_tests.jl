@@ -15,7 +15,6 @@ open("output/profile_flat.txt", "w") do s
     Profile.print(IOContext(s, :displaysize => (24, 500));
                   format=:flat,
                   sortedby=:count,
-                  maxdepth=60,
-                  noisefloor=4,
-                  mincount=4)
+                  noisefloor=2,
+                  mincount=2)
 end

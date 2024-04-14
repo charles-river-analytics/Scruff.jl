@@ -21,10 +21,16 @@ Representation of a factor over `N` instances.
     keys ids of the instances
     entries a vector of factor values
 """
-struct Factor{N}
-    dims :: Union{NTuple{N, Int}, Nothing}
-    keys :: Union{NTuple{N, Int}, Nothing} 
-    entries :: Array{<:Real, 1}
+struct Factor{N, T <: Real}
+    dims :: NTuple{N, Int}
+    keys :: NTuple{N, Int}
+    entries :: Vector{T}
+    function Factor(dims::Nothing, keys::Nothing, entries::Vector{T}) where T
+        return new{0, T}((), (), entries)
+    end
+    function Factor(dims::NTuple{N, Int}, keys, entries::Vector{T}) where {N, T}
+        return new{N, T}(dims, keys, entries)
+    end
 end
 
 """
@@ -162,13 +168,13 @@ function mults(dims)
     n = length(dims)
     result = Array{Int64}(undef, n)
     result[n] = 1
-    for k in n-1:-1:1
+    for k in (n - 1):-1:1
         result[k] = result[k+1] * dims[k+1]
     end
     return result
 end
 
-function do_prod(op :: ProdOp{N1, N2, D1, D2, J}, f1, f2) where {N1, N2, D1, D2, J}
+function do_prod(N1, N2, J, f1, f2)
     # The result factor is constructed so that the variables in the second
     # input come first, in order, and then any variables in the first factor
     # that are not in the join come in order.
@@ -177,12 +183,15 @@ function do_prod(op :: ProdOp{N1, N2, D1, D2, J}, f1, f2) where {N1, N2, D1, D2,
     # We work out the instructions,
     # which will be used to indicate which rows of the two input factors
     # any row of the result factor will be composed from.
-    instructions = []
+    D1 = f1.dims
+    D2 = f2.dims
+
+    instructions = Vector{Vector{Tuple{Int, Int}}}(undef, N2)
     NR = N2
-    rda = [d for d in D2]
-    rk = [k for k in f2.keys]
+    rda = Vector{Int}([d for d in D2])
+    rk = Vector{Int}([k for k in f2.keys])
     for j = 1:N2
-        push!(instructions, [(2,j)])
+        instructions[j] = [(2, j)] 
     end
 
     for (i, j) in J
@@ -231,14 +240,14 @@ end
 
 function product(f1 :: Factor{N1}, f2 :: Factor{N2}) where {N1, N2}
     js = map(k -> findfirst(x -> x == k, f2.keys), f1.keys)
-    ijs :: Array{Tuple{Int16, Int16}, 1}= []
-    for i = length(f1.keys):-1:1
-        y = isnothing(js[i]) ? 0 : js[i]
-        push!(ijs, (i, y))
+    ijs :: Array{Tuple{Int16, Int16}, 1} = Array{Tuple{Int16, Int16}, 1}(undef, length(f1.keys))
+    for i = 1:length(f1.keys)
+        j = length(f1.keys) - i + 1
+        y = isnothing(js[j]) ? 0 : js[j]
+        ijs[i] = (j, y)
     end
     matches = NTuple{N1, Tuple{Int16, Int16}}(ijs)
-    op = ProdOp{N1, N2, f1.dims, f2.dims, matches}()
-    return do_prod(op, f1, f2)
+    return do_prod(N1, N2, matches, f1, f2)
 end
 
 
@@ -255,7 +264,7 @@ function do_sum(op :: SumOp{1, D, 1}, f :: Factor) where D
     x = sum(f.entries)
     dims = nothing
     keys = nothing
-    return Factor{0}(dims, keys, [x])
+    return Factor(dims, keys, [x])
 end
 
 function do_sum(op :: SumOp{N, D, I}, f :: Factor) where {N, D, I}
