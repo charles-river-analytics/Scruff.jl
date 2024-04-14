@@ -1,6 +1,6 @@
 export 
     support_quality_rank,
-    support_quality_from_rank,
+    support_quality_from_rank
 
 @impl begin
     struct SFuncExpectation end
