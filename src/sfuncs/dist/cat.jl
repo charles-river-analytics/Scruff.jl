@@ -7,10 +7,10 @@ import ..Utils.normalize
 import Distributions
 
 const Categorical{P, Ps} = DistributionsSF{Distributions.Categorical{P, Ps}, Int}
-Categorical(p) = Categorical{typeof(p[1]), typeof(p)}(p)
+Categorical(p::Ps) where {P, Ps <: AbstractVector{P}} = Categorical{Ps, P}(p)
 
-const Discrete{T,P,Ts,Ps} = DistributionsSF{Distributions.DiscreteNonParametric{T,P,Ts,Ps}, T}
-function Discrete(xs, ps)
+const Discrete{T, P, Ts, Ps} = DistributionsSF{Distributions.DiscreteNonParametric{T, P, Ts, Ps}, T}
+function Discrete(xs::Xs, ps::Ps) where {X, Xs <: AbstractVector{X}, P, Ps <: AbstractVector{P}} 
     # Handle duplicates
     sort_order = sortperm(xs)
     xs = xs[sort_order]
@@ -26,7 +26,7 @@ function Discrete(xs, ps)
     xs = xs[keep]
     ps = ps[keep]
       
-    return Discrete{typeof(xs[1]), typeof(ps[1]), typeof(xs), typeof(ps)}(xs, ps)
+    return Discrete{X, P, Xs, Ps}(xs, ps)
 end
 
 @doc """
