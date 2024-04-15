@@ -74,7 +74,7 @@ end
 
 @impl begin
     struct NetworkSFuncSampleLogcpdf end
-    function sample_logcpdf(sf::NetworkSFunc{I,O}, input::I)::Tuple{O, AbstractFloat} where {I,O}
+    function sample_logcpdf(sf::NetworkSFunc{I,O}, input::I) where {I,O}
         network = sf
         sample_cache = Dict{Union{SFunc,NetworkInput},Any}(s_inp => (walk_inp, 0.0) for (s_inp, walk_inp) in zip(network.input_placeholders, input))
 
@@ -94,12 +94,12 @@ end
 
 @impl begin
     struct NetworkSFuncLogcpdf end
-    function logcpdf(sf::NetworkSFunc{I,O}, input::I, output::O)::AbstractFloat where {I,O}
+    function logcpdf(sf::NetworkSFunc{I, O}, input::I, output::O) where {I, O}
         # I think this returns a sample x of a distribution s.t. log(Expectation(exp(x))) gives the logcpdf
         # In the special case where all NetworkSFunc nodes are in outputs then the calculation is deterministic
 
-        sample_cache = merge(Dict{Union{SFunc,NetworkInput},Any}(s_inp => (walk_inp, 0.0) for (s_inp, walk_inp) in zip(sf.input_placeholders, input)),
-                        Dict{Union{SFunc,NetworkInput},Any}(s_out => (walk_out, nothing) for (s_out, walk_out) in zip(sf.outputs, output)))
+        sample_cache = Dict{Union{SFunc, NetworkInput}, Any}((s_inp => (walk_inp, 0.0) for (s_inp, walk_inp) in zip(sf.input_placeholders, input))...,
+                                                             (s_out => (walk_out, nothing) for (s_out, walk_out) in zip(sf.outputs, output))...)
 
         # Assume network.funcs is topologically sorted. TODO?
 
@@ -108,7 +108,7 @@ end
             if haskey(sample_cache, sfunc)
                 par_samples = [sample_cache[sinp][1] for sinp in sf.parents[sfunc]]
                 cumlogcpdf = logcpdf(sfunc, Tuple(par_samples), sample_cache[sfunc][1]) + 
-                        sum([sample_cache[sinp][2] for sinp in sf.parents[sfunc]])
+                                 sum([sample_cache[sinp][2] for sinp in sf.parents[sfunc]])
                 sample_cache[sfunc] = (sample_cache[sfunc][1], cumlogcpdf)
             else
                 par_samples = [sample_cache[sinp][1] for sinp in sf.parents[sfunc]]

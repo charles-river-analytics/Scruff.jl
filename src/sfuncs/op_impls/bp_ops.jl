@@ -51,8 +51,12 @@ end
     struct SFuncOutgoingPis end
 
     function outgoing_pis(sf::SFunc, range::VectorOption, bel::Dist, 
-            incoming_lambdas::VectorOption{<:Score})::Vector{<:Dist} 
-        return [send_pi(sf, range, bel, l) for l in incoming_lambdas]
+            incoming_lambdas::VectorOption{<:Score})::Vector{<:Dist}
+        if length(incoming_lambdas) == 0
+            return Vector{Dist}()
+        else
+            return [send_pi(sf, range, bel, l) for l in incoming_lambdas]
+        end
     end
 end
 

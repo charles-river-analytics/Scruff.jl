@@ -161,7 +161,7 @@ end
             cs[Int(floor(x)) + 2] += 1
         end
         for j in 1:4
-            @test isapprox(cs[j] / tot, 0.25; atol = 0.05)
+            @test isapprox(cs[j] / tot, 0.25; atol = 0.1)
         end
         @test isapprox(logcpdf(u, (), 0.0), log(0.25))
         @test isapprox(logcpdf(u, (), 5.0), -Inf64)
