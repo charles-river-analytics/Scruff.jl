@@ -80,7 +80,7 @@ end
 
 @impl begin
     struct MyCondMuNormalMarginalize end
-    function marginalize(sf::MyCondMuNormal, x::MyNormal)::MyNormal
+    function marginalize(x::MyNormal, sf::MyCondMuNormal)::MyNormal
         mu = expectation(x, tuple())
         var = variance(x, tuple()) + sf.var
         return MyNormal(mu, var)
@@ -116,7 +116,7 @@ function make_initial(m::WienerProcess)
 end
 wienerprocess = WienerProcess(0.1)
 
-@testset "newcore" begin
+@testset "Core" begin
     @testset "instantiate!" begin
         @testset "instant network" begin
             @testset "correctly instantiates variables and placeholders" begin

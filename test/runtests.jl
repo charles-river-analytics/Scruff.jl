@@ -1,6 +1,4 @@
 # File test/runtests.jl
-module ScruffTest
-
 using Test
 
 @testset "ScruffTests" begin
@@ -23,6 +21,4 @@ using Test
         include("../docs/examples/rembrandt_example.jl")
         include("../docs/examples/soccer_example.jl")
     end
-end
-
 end

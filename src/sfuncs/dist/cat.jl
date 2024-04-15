@@ -1,7 +1,33 @@
-export Cat
+export 
+    Cat,
+    Categorical,
+    Discrete
 
 import ..Utils.normalize
-import Distributions.Categorical
+import Distributions
+
+const Categorical{P, Ps} = DistributionsSF{Distributions.Categorical{P, Ps}, Int}
+Categorical(p::Ps) where {P, Ps <: AbstractVector{P}} = Categorical{Ps, P}(p)
+
+const Discrete{T, P, Ts, Ps} = DistributionsSF{Distributions.DiscreteNonParametric{T, P, Ts, Ps}, T}
+function Discrete(xs::Xs, ps::Ps) where {X, Xs <: AbstractVector{X}, P, Ps <: AbstractVector{P}} 
+    # Handle duplicates
+    sort_order = sortperm(xs)
+    xs = xs[sort_order]
+    ps = ps[sort_order]
+
+    for i=1:(length(xs) - 1)
+        if xs[i] == xs[i + 1]
+            ps[i] += ps[i + 1]
+            ps[i + 1] = 0
+        end
+    end
+    keep = ps .> 0
+    xs = xs[keep]
+    ps = ps[keep]
+      
+    return Discrete{X, P, Xs, Ps}(xs, ps)
+end
 
 @doc """
     mutable struct Cat{O} <: Dist{O, Vector{Real}}
@@ -67,13 +93,12 @@ mutable struct Cat{O} <: Dist{O}
     end
 end
 
-
 @impl begin
     struct CatSupport end
     function support(sf::Cat{O}, 
-                    parranges::NTuple{N,Vector}, 
-                    size::Integer, 
-                    curr::Vector{<:O}) where {O,N}
+                     parranges::NTuple{N,Vector}, 
+                     size::Integer, 
+                     curr::Vector{<:O}) where {O,N}
         sf.range
     end
 end
@@ -88,7 +113,7 @@ end
 @impl begin
     struct CatSample end
     function sample(sf::Cat{O}, i::Tuple{})::O where {O}
-        i = rand(Categorical(sf.params))
+        i = rand(Distributions.Categorical(sf.params))
         return sf.range[i]
     end
 end

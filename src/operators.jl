@@ -71,7 +71,17 @@ module Operators
 
 using ..Scruff
 
+export
+    VectorOption,
+    Option
+
+"""VectorOption{T} = Union{Vector{Union{}}, Vector{T}}"""
+VectorOption{T} = Union{Vector{Union{}}, Vector{T}}
+"""Option{T} = Union{Nothing, T}"""
+Option{T} = Union{Nothing, T}
+
 include("operators/op_performance.jl")
 include("operators/op_defs.jl")
+include("operators/op_impls.jl")
 
 end

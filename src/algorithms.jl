@@ -1,6 +1,6 @@
 module Algorithms
 
-using Distributions: Categorical
+import Distributions
 
 using ..Scruff
 using ..Utils

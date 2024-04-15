@@ -1,19 +1,5 @@
 using ..MultiInterface
 
-export
-    importance_sample,
-    support_quality_rank,
-    support_quality_from_rank,
-    VectorOption,
-    Option
-
-# These are the new operator definitions where the type signature is specified
-
-"""VectorOption{T} = Union{Vector{Union{}}, Vector{T}}"""
-VectorOption{T} = Union{Vector{Union{}}, Vector{T}}
-"""Option{T} = Union{Nothing, T}"""
-Option{T} = Union{Nothing, T}
-
 # to support 
 MultiInterface.get_imp(::Nothing, args...) = nothing
 
@@ -21,65 +7,31 @@ MultiInterface.get_imp(::Nothing, args...) = nothing
 @interface inverse(sf::SFunc{I,O}, o::O)::Score{I} where {I,O}
 @interface is_deterministic(sf::SFunc)::Bool
 @interface sample(sf::SFunc{I,O}, i::I)::O where {I,O}
-@interface sample_logcpdf(sf::SFunc{I,O}, i::I)::Tuple{O, AbstractFloat} where {I,O}
+@interface sample_logcpdf(sf::SFunc{I,O}, i::I)::Tuple{O, <:AbstractFloat} where {I,O}
 # @interface invert(sf::SFunc{I,O}, o::O)::I where {I,O}
 @interface lambda_msg(sf::SFunc{I,O}, i::SFunc{<:Option{Tuple{}}, O})::SFunc{<:Option{Tuple{}}, I} where {I,O}
-@interface marginalize(sf::SFunc{I,O}, i::SFunc{<:Option{Tuple{}}, I})::SFunc{<:Option{Tuple{}}, O} where {I,O}
+@interface marginalize(sfb::SFunc{X, Y}, sfa::SFunc{Y, Z})::SFunc{X, Z} where {X, Y, Z}
 @interface logcpdf(sf::SFunc{I,O}, i::I, o::O)::AbstractFloat where {I,O}
 @interface cpdf(sf::SFunc{I,O}, i::I, o::O)::AbstractFloat where {I,O}
 @interface log_cond_prob_plus_c(sf::SFunc{I,O}, i::I, o::O)::AbstractFloat where {I,O}
 @interface f_expectation(sf::SFunc{I,O}, i::I, fn::Function) where {I,O}
-@interface expectation(sf::SFunc{I,O}, i::I)::O where {I,O}
+# Expectation (and others) should either return some continuous relaxation of O (e.g. Ints -> Float) or there should be another op that does
+@interface expectation(sf::SFunc{I,O}, i::I) where {I,O} 
 @interface variance(sf::SFunc{I,O}, i::I)::O where {I,O}
 @interface get_score(sf::SFunc{Tuple{I},O}, i::I)::AbstractFloat where {I,O}
 @interface get_log_score(sf::SFunc{Tuple{I},O}, i::I)::AbstractFloat where {I,O}
-
-@impl begin
-    struct SFuncExpectation end
-
-    function expectation(sf::SFunc{I,O}, i::I) where {I,O}
-        return f_expectation(sf, i, x -> x)
-    end
-end
+# Return a new SFunc that is the result of summing samples from each constituent SFunc
+@interface sumsfs(fs::NTuple{N, <:SFunc{I, O}})::SFunc{I, O} where {N, I, O}
+@interface fit_mle(t::Type{S}, dat::SFunc{I, O})::S where {I, O, S <: SFunc{I, O}}
+@interface support_minimum(sf::SFunc{I, O}, i::I)::O where {I, O}
+@interface support_maximum(sf::SFunc{I, O}, i::I)::O where {I, O}
 
 @interface support(sf::SFunc{I,O}, 
                    parranges::NTuple{N,Vector}, 
                    size::Integer, 
                    curr::Vector{<:O}) where {I,O,N}
 
-function importance_sample end
-
-"""
-    support_quality_rank(sq::Symbol)
-
-Convert the support quality symbol into an integer for comparison.
-"""
-function support_quality_rank(sq::Symbol)
-    if sq == :CompleteSupport return 3
-    elseif sq == :IncrementalSupport return 2
-    else return 1 end
-end
-
-"""
-    support_quality_from_rank(rank::Int)
-
-Convert the rank back into the support quality.
-"""
-function support_quality_from_rank(rank::Int)
-    if rank == 3 return :CompleteSupport
-    elseif rank == 2 return :IncrementalSupport
-    else return :BestEffortSupport() end
-end
-
 @interface support_quality(sf::SFunc, parranges)
-
-@impl begin
-    struct SFuncSupportQuality end
-
-    function support_quality(s::SFunc, parranges)
-            :BestEffortSupport
-    end
-end
 
 @interface bounded_probs(sf::SFunc{I,O}, 
                          range::VectorOption{<:O}, 
@@ -91,7 +43,7 @@ end
                         id, 
                         parids::Tuple)::Tuple{Vector{<:Scruff.Utils.Factor}, Vector{<:Scruff.Utils.Factor}} where {I,O,N}
 
-#= Statistics computation not included in the release
+#= Statistics computation not finished
 @interface initial_stats(sf::SFunc)
 
 # TODO create an abstract type Stats{I,O}
@@ -105,6 +57,7 @@ end
 @interface accumulate_stats(sf::SFunc, existing_stats, new_stats)
 @interface maximize_stats(sf::SFunc, stats)
 =#
+
 @interface compute_bel(sf::SFunc{I,O},
                       range::VectorOption{<:O}, 
                       pi::Dist{<:O}, 
@@ -142,4 +95,3 @@ end
                        parranges::NTuple{N,Vector},
                        incoming_pis::Tuple,
                        parent_idx::Integer)::Score where {N,I,O}
-
