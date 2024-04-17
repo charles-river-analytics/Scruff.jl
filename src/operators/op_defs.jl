@@ -6,7 +6,7 @@ MultiInterface.get_imp(::Nothing, args...) = nothing
 # Being specific here has big perf implact due to type-stability
 const FloatType = Float64
 
-@interface forward(sf::SFunc{I,O}, i::I)::Dist{O} where {I,O}
+@interface forward(sf::SFunc{I, O}, i::I)::Dist{O} where {I, O}
 
 # Provide a set of weighted values that characterize the distribution
 # (e.g. such that expectations can be well approximated E[f(x)] \approx \sum w_i f(x_i) / \sum w_i
