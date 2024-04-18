@@ -9,7 +9,22 @@ using Scruff.Algorithms
 import Scruff: make_initial, make_transition
 
 @testset "Filtering" begin
-    
+
+    struct Tree
+        x :: Int
+        left :: Union{Nothing, Tree}
+        right :: Union{Nothing, Tree}
+        Tree(x) = new(x, nothing, nothing)
+        Tree(x,l,r) = new(x, l, r)
+    end
+
+    struct Model1 <: VariableTimeModel{Tuple{}, Tuple{}, Tree} end
+    global make_initial(::Model1, t) = Constant(Tree(0))
+    global make_transition(::Model1, parts, t) = Constant(Tree(t))
+    struct Model2 <: VariableTimeModel{Tuple{}, Tuple{Tree, Tree}, Tree} end
+    global make_initial(::Model2, t) = Constant(Tree(0))
+    global make_transition(::Model2, parts, t) = Det(Tuple{Tree, Tree}, Tree, (l,r) -> Tree(t, l, r))
+
     @testset "Window utilities" begin
         
         @testset "construct an instant network from instances" begin
@@ -245,21 +260,6 @@ import Scruff: make_initial, make_transition
             # 1) v2, v3, v4 - no extra instances should be created
             # 2) v3, v2, v4 - when v4 is instantiated, the coherent PF should also instantiate v3
             # 3) v3, v1, v4 - when v4 is instantiated, the coherent PF should also instantiate v2 and v3 - difficult because it has to recognize an ancestor
-            struct Tree
-                x :: Int
-                left :: Union{Nothing, Tree}
-                right :: Union{Nothing, Tree}
-                Tree(x) = new(x, nothing, nothing)
-                Tree(x,l,r) = new(x, l, r)
-            end
-    
-            struct Model1 <: VariableTimeModel{Tuple{}, Tuple{}, Tree} end
-            global make_initial(::Model1, t) = Constant(Tree(0))
-            global make_transition(::Model1, parts, t) = Constant(Tree(t))
-            struct Model2 <: VariableTimeModel{Tuple{}, Tuple{Tree, Tree}, Tree} end
-            global make_initial(::Model2, t) = Constant(Tree(0))
-            global make_transition(::Model2, parts, t) = Det(Tuple{Tree, Tree}, Tree, (l,r) -> Tree(t, l, r))
-    
             v1 = Model1()(:v1)
             v2 = Model2()(:v2)
             v3 = Model2()(:v3)
@@ -464,20 +464,6 @@ import Scruff: make_initial, make_transition
             # 1) v2, v3, v4 - no extra instances should be created
             # 2) v3, v2, v4 - when v4 is instantiated, the coherent PF should also instantiate v3
             # 3) v3, v1, v4 - when v4 is instantiated, the coherent PF should also instantiate v2 and v3 - difficult because it has to recognize an ancestor
-            struct Tree
-                x :: Int
-                left :: Union{Nothing, Tree}
-                right :: Union{Nothing, Tree}
-                Tree(x) = new(x, nothing, nothing)
-                Tree(x,l,r) = new(x, l, r)
-            end
-    
-            struct Model1 <: VariableTimeModel{Tuple{}, Tuple{}, Tree} end
-            global make_initial(::Model1, t) = Constant(Tree(0))
-            global make_transition(::Model1, parts, t) = Constant(Tree(t))
-            struct Model2 <: VariableTimeModel{Tuple{}, Tuple{Tree, Tree}, Tree} end
-            global make_initial(::Model2, t) = Constant(Tree(0))
-            global make_transition(::Model2, parts, t) = Det(Tuple{Tree, Tree}, Tree, (l,r) -> Tree(t, l, r))
     
             v1 = Model1()(:v1)
             v2 = Model2()(:v2)
@@ -683,21 +669,6 @@ import Scruff: make_initial, make_transition
             # 1) v2, v3, v4 - no extra instances should be created
             # 2) v3, v2, v4 - when v4 is instantiated, the coherent PF should also instantiate v3
             # 3) v3, v1, v4 - when v4 is instantiated, the coherent PF should also instantiate v2 and v3 - difficult because it has to recognize an ancestor
-            struct Tree
-                x :: Int
-                left :: Union{Nothing, Tree}
-                right :: Union{Nothing, Tree}
-                Tree(x) = new(x, nothing, nothing)
-                Tree(x,l,r) = new(x, l, r)
-            end
-    
-            struct Model1 <: VariableTimeModel{Tuple{}, Tuple{}, Tree} end
-            global make_initial(::Model1, t) = Constant(Tree(0))
-            global make_transition(::Model1, parts, t) = Constant(Tree(t))
-            struct Model2 <: VariableTimeModel{Tuple{}, Tuple{Tree, Tree}, Tree} end
-            global make_initial(::Model2, t) = Constant(Tree(0))
-            global make_transition(::Model2, parts, t) = Det(Tuple{Tree, Tree}, Tree, (l,r) -> Tree(t, l, r))
-    
             v1 = Model1()(:v1)
             v2 = Model2()(:v2)
             v3 = Model2()(:v3)

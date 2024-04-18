@@ -127,7 +127,7 @@ get_name(i::Instance):: Symbol = get_node(i).name
 
 Get the instance's variable's underlying model.
 """
-get_definition(i::VariableInstance)::D where {D<:ValueTyped} = get_variable(i).model
+get_definition(i::VariableInstance)::D where {D<:ValueTyped} = get_node(i).model
 
 """
     get_model(i::VariableInstance)::D where {D<:ValueTyped}

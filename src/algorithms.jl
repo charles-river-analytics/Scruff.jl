@@ -29,4 +29,5 @@ include("algorithms/filtering/windowfilter.jl")
 include("algorithms/filtering/bpfilter.jl")
 include("algorithms/filtering/loopyfilter.jl")
 include("algorithms/filtering/particlefilter.jl")
+include("algorithms/analysis/em.jl")
 end

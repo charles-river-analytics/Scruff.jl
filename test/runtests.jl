@@ -13,6 +13,7 @@ using Test
     include("test_importance.jl")
     include("test_net.jl")
     include("test_filter.jl")
+    include("test_em.jl")
     # These don't test anything, but we want to make sure any changes haven't broken the examples
     redirect_stdout(devnull) do
         include("../docs/examples/novelty_example.jl")

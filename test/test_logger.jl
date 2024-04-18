@@ -29,7 +29,7 @@ using Scruff.Operators
         
         @test_logs(
             (:info, r"distribute_messages!"),
-            (:info, r"get_variable"),
+            (:info, r"get_node"),
             (:info, r"collect_messages"),
             (:info, r"get_variables"),
             (:info, r"set_value!"),

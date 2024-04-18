@@ -17,6 +17,7 @@ mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, S <: SFunc
     imults :: NTuple{NumInputs, Int}
     inversemaps :: NTuple{NumInputs, Dict{Any, Int}}
     sfs :: Array{S, NumInputs}
+    _Q :: Type
     """
         function Table(J, O, NumInputs::Int, paramdict, sfmaker:Function) where {J, O, S <: SFunc{J,O}}
 
@@ -51,7 +52,7 @@ mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, S <: SFunc
             q = paramdict[is] 
             sfs[k] = sfmaker(q)
         end
-        new{NumInputs, I, J, K, O, S}(sortedcombos, tuple(iranges...), isizes, imults, inversemaps, sfs)
+        new{NumInputs, I, J, K, O, S}(sortedcombos, tuple(iranges...), isizes, imults, inversemaps, sfs, Q)
     end
 end
 
@@ -81,14 +82,16 @@ function gensf(t::Table{N,I,J,K,O,S}, parvals::NTuple{N,Any}) where {N,I,J,K,O,S
     end
     return t.sfs[i]# Change this to just index on the tuple of indices rather than do the calculation ourselves
 end
-#=
-function do_maximize_stats(t::Table{N,I,J,K,O,Q,S}, sfmaximizers) where {N,I,J,K,O,Q,S}
-    result = Array{Q, N}(undef, t.isizes)
+
+# STATS
+function do_maximize_stats(t::Table{N,I,J,K,O,S}, sfmaximizers) where {N,I,J,K,O,S}
+    result = Array{t._Q, N}(undef, t.isizes)
     # Since this is a table, the new parameters have to have an entry for each of the original parent values
-    for k in 1:length(t.params)
+    for k in 1:length(t.icombos)
         is = t.icombos[k]
-        result[k] = get(sfmaximizers, is, t.default)
+        # FIXME if _Q is not constructable
+        result[k] = get(sfmaximizers, is, t._Q())
     end
     return result
 end
-=#
+# STATS END

@@ -138,7 +138,7 @@ end
     function bounded_probs(sf::Cat{O}, 
                         range::Vector{O}, 
                         ::NTuple{N,Vector})::Tuple{Vector{<:AbstractFloat}, 
-                        Vector{<:AbstractFloat}} where {O,N}
+                                Vector{<:AbstractFloat}} where {O,N}
 
         ps = [x in keys(sf.inversemap) ? sf.params[sf.inversemap[x]] : 0.0 for x in range]
         (ps, ps)
@@ -158,7 +158,7 @@ end
     end
 end
 
-#=
+# STATS
 @impl begin
     struct CatInitialStats end
 
@@ -202,7 +202,8 @@ end
         normalize(stats) 
     end
 end
-=#
+# END STATS
+
 
 @impl begin
     struct CatFExpectation end
