@@ -4,74 +4,26 @@ export Interface,
        Policy,
        @interface,
        @impl,
-       enable_multiinterface_validation,
+       impl,
+       __policy,
        get_policy,
        set_policy,
        with_policy,
        @unpack,
        list_impls,
+       get_method,
        get_imp,
-       get_method
+       get_impl
 
 using MacroTools
 import Parameters: with_kw, @unpack
 
-SE = Union{Symbol,Expr}
-
 __policy = nothing
 __num_imps = Dict()
-__modules = Dict{Symbol,Module}()
-# __interface = Dict{Symbol, Signature}()
 
-enable_display() = global display = true
-disable_display() = global display = false
 display = false
 
-gen_argname() = Symbol(replace(string(gensym("arg")), "#"=>""))
-
-mi_types(e::Expr) = length(e.args) == 1 ? e.args[1] : e.args[2]
-mi_types(::Symbol) = :Any
-
-mi_argname(arg::Expr) = length(arg.args) == 1 ? gen_argname() : arg.args[1]
-mi_argname(arg::Symbol) = arg
-
-mi_getname(f::Symbol) = f
-mi_getname(f::Expr) = f.args[2].value
-
-function register_module(str, mod) 
-    global __modules
-    push!(__modules, str=>mod)
-end
-
-function get_module(mod, str)
-    global __modules
-    get(__modules, str, mod)
-end
-
-# TODO do we want to allow the same interface name in different modules?
-function register_interface(source, str, mod, args, retval, wparams)
-    global __interface
-    haskey(__interface, str) && @warn "reregistering interface for $str at $source" was___=get_interface(str) willbe=Signature(mod, args, retval, wparams)
-    push!(__interface, str=>Signature(mod, args, retval, wparams))
-end
-
-function get_interface(str)
-    get(__interface, str, nothing)
-end
-
-function getvars(t::Type)
-    v = []
-
-    getvars(t) = nothing
-    getvars(t::DataType) = append!(v, collect(t.parameters))
-    getvars(t::UnionAll) = begin
-        push!(v, t.var)
-        getvars(t.body)
-    end
-    
-    unique(v)
-end
-
+# This is used to give each impl struct a unique name if not specified
 function get_and_inc_imp_number(imp_type)
     global __num_imps
     if ~(imp_type in keys(__num_imps))
@@ -116,46 +68,33 @@ function get_impl(t::DataType)
     return t.parameters[2]
 end
 
-function strip_module(s)
-    l = findlast('.', s)
-    l === nothing || return s[(l+1):end]
-    s
-end
-
 function firstcaps_to_lowerunder(s)
-    s = strip_module(s)
     return lowercase(strip(replace(s,r"[A-Z]"=>s"_\0"),['_']))
 end
 
 function lowerunder_to_firstcaps(s)
-    s = strip_module(s)
     return replace(titlecase(s),"_"=>"")
 end
 
-nothing2any(::Nothing) = :Any
-nothing2any(x::Union{Symbol,Expr}) = x
 
 """
     macro interface(interface_exp)
-
 Called
 ```
 @interface a(x::I)::O where {I,O}
 ```
-
 Generates the following code:
 ```
 abstract type A <: Interface end
-
 function (a(x::I; )::O) where {I,O}
     policy = get_policy()
     return a(policy, x::I)
 end
-
 function (a(policy::Policy, x::I; )::O) where {I,O}
     imp = get_imp(policy, A, x::I)
     return a(imp, x::I)
 end
+export A, a
 ```
 """
 macro interface(interface_exp)
@@ -164,13 +103,13 @@ end
 
 function interface_macro(mod, source, interface_exp)
     f, args, R, W = interface_capture(interface_exp)
-    args = add_missing_argnames(args)
     if display
         println("name: ", f, ": ", typeof(f))
         println("args: ", args, ": ", typeof(args))
         println("returntype: ", R, ": ", typeof(R))
         println("where: ", W, ": ", typeof(W))
     end
+    #println(stderr, f)
 
     W = isnothing(W) ? () : W
 
@@ -178,12 +117,12 @@ function interface_macro(mod, source, interface_exp)
 
     body = quote
         policy = get_policy()
-        return $f(policy, $(get_arg_vars(args)...))
+        return $f(policy, $(remove_types_from_args(args)...))
     end
-    
+
     use_policy_body = quote
-        imp = get_imp(policy, $interface_type_name, $(get_arg_vars(args)...))
-        return $f(imp, $(get_arg_vars(args)...))
+        imp = get_imp(policy, $interface_type_name, $(remove_types_from_args(args)...))
+        return $f(imp, $(remove_types_from_args(args)...))
     end
 
     bare_func_sig_dict = Dict(:name => f,
@@ -202,14 +141,11 @@ function interface_macro(mod, source, interface_exp)
                                  :whereparams => W,
                                  )
 
-    register_module(interface_type_name, mod)
-    # WIP
-    # register_interface(source, interface_type_name, mod, get_arg_types(args), nothing2any(R), W)
-    
     result = quote
         abstract type $interface_type_name <: Interface end
         $(combinedef(bare_func_sig_dict))
         $(combinedef(default_func_sig_dict))
+        export $interface_type_name, $f
     end
     if display
         println(prettify(result))
@@ -218,85 +154,8 @@ function interface_macro(mod, source, interface_exp)
     return result
 end
 
-function get_arg_vars(args)
-    tovar(s::Symbol) = s
-    tovar(expr::Expr) = tovar(Val(expr.head), expr)
-    tovar(::Val{:(::)}, expr) = expr.args[1]
-    
-    map(tovar, args)
-end
-
-function add_missing_argnames(args)
-    map(args) do arg
-        m = match(r"^::\s*(.*)", string(arg))
-        if m !== nothing
-            arg = copy(arg)
-            insert!(arg.args, 1, gen_argname())
-        end
-        return arg
-    end
-end
-
-function get_arg_type_sigs(args)
-    map(args) do arg
-        m = match(r".*?::\s*(.*)", string(arg))
-        s = m === nothing ? :Type : Meta.parse(string("Type{<:", m.captures[1],"}"))
-        return Expr(:(::), s)
-    end
-end
-
-function get_arg_types(args)::Vector{Union{Symbol, Expr}}
-    map(args) do arg
-        m = match(r".*?::\s*(.*)", string(arg))
-        return m === nothing ? :Any : Meta.parse(m.captures[1])
-    end
-end
-
-
-function mi_join_args(func_sig_dicts)
-    zippedargs = zip([[mi_types(a) for a in fsd[:args]] for fsd in func_sig_dicts]...)
-    argnames = [mi_argname(a) for a in first(func_sig_dicts)[:args]]
-
-    function mi_merge_into!(s::Expr, t)
-        t in s.args && return s
-        push!(s.args, t)
-        return s
-    end
-
-    do_union(s,t) = :(Union{$s,$t})
-    mi_merge(::Val, s::Expr, t::Symbol) = do_union(s,t)
-    mi_merge(::Val, s::Expr, ::Val, t::Expr) = do_union(s,t)
-
-    function mi_merge(::Val{:Union}, s::Expr, ::Val{:Union}, t::Expr)
-        v = deepcopy(s)
-        append!(v.args, t.args)
-        unique!(v.args)
-        return v 
-    end
-    
-    mi_merge(::Val{:Union}, s::Expr, t::Symbol) = mi_merge_into!(deepcopy(s), t)
-    mi_merge(::Val{:Union}, s::Expr, ::Val, t::Expr) = mi_merge_into!(deepcopy(s), t)
-    mi_merge(::Val, s::Expr, ::Val{:Union}, t::Expr) = mi_merge(t, s)
-    
-    mi_merge(s::Symbol, t::Symbol) = s === t ? s : do_union(s,t)
-    mi_merge(s::Expr, t::Symbol) = mi_merge(Val(s.args[1]), s, t)
-    mi_merge(s::Symbol, t::Expr) = mi_merge(t,s)
-
-    mi_merge(s::Expr, t::Expr) = mi_merge(Val(s.args[1]), s, Val(t.args[1]), t)
-
-    args = [reduce(mi_merge, arg) for arg in zippedargs]
-    exprs = map(argnames, args) do n,arg
-        :($(n)::$(arg))
-    end
-    collect(exprs)
-end
-
-parameter_names(e::Symbol) = e
-parameter_names(e::Expr) = length(e.args) == 1 ? gen_argname() : e.args[1]
-
 """
     macro impl(expr)
-
 Called
 ```
 @impl begin
@@ -309,10 +168,8 @@ Called
     end
 end
 ```
-
 The `MyA` can be considered an identifier for this particular method, as opposed to different implementations of 
 this function.
-
 This macro generates the following code:
 ```
 begin
@@ -350,23 +207,109 @@ begin
 end
 ```
 """
-macro impl(expr)
-    return esc(implement_macro(__module__, __source__, expr))
+
+macro impl(expr, interface_module)
+    return esc(impl(__module__, __source__, expr, interface_module))
 end
 
-function implement_macro(mod, source, implement_expr)
-    stripped = MacroTools.prewalk(rmlines, implement_expr)
-    T, fields, fname, func_sig_dicts = struct_capture(stripped)
+macro impl(expr)
+    return esc(impl(__module__, __source__, expr, nothing))
+end
 
-    interface_name = Symbol(lowerunder_to_firstcaps(string(fname)))
-    impl_type_name = isnothing(T) ?
-                         Symbol(string(interface_name, get_and_inc_imp_number(interface_name))) :
-                         T
+synth_arg_if_none(s::Symbol) = s
+function synth_arg_if_none(exp)
+    if length(exp.args)==2
+        return exp
+    else
+        x = gensym()
+        return :($x::$(exp.args[1]))
+    end
+end
 
-    first_func_sig_dict = first(func_sig_dicts)
-    specific_imp_func_decs = Dict[]
-    for func_sig_dict in func_sig_dicts
+function def_args_to_call_args(def_args)
+    # Mostly handle edge case where def args has no variable placeholder
+    # E.g. given defined f(x::Int, ::Vector) need to call f(x::Int, _::Vector)
+    return [synth_arg_if_none(exp) for exp in def_args]
+end
+
+just_arg_var(s::Symbol) = s
+function just_arg_var(exp)
+    return exp.args[1]
+end
+
+function remove_types_from_args(call_args)
+    return [just_arg_var(exp) for exp in call_args]
+end
+
+function get_interface_name(mod, source, implement_expr)
+    impl_parts = collect([(implement_expr.args[2*i - 1], implement_expr.args[2*i]) for i in 1:Int(length(implement_expr.args) / 2)])
+
+    local impl_type_name, fields, op_name
+    if last(impl_parts[1]).head == :struct
+        struct_part = impl_parts[1]
+        #println("struct part: $struct_part")
+        impl_type_name, fields = struct_capture(last(struct_part))
+        impl_parts = impl_parts[2:end]
+
+        op_name = splitdef(last(impl_parts[1]))[:name]
+        interface_name = Symbol(lowerunder_to_firstcaps(String(op_name)))
+    else
+        op_name = splitdef(last(impl_parts[1]))[:name]
+        interface_name = Symbol(lowerunder_to_firstcaps(String(op_name)))
+    end
+
+    return interface_name
+end
+
+function impl(mod, source, implement_expr, interface_module)
+    #println("impl_expr: $(implement_expr.head), $(implement_expr.args)")
+    impl_parts = collect([(implement_expr.args[2*i - 1], implement_expr.args[2*i]) for i in 1:Int(length(implement_expr.args) / 2)])
+
+    #println("impl_parts: $(impl_parts)")
+    first_ln_node = first(impl_parts[1])
+    local impl_type_name, fields, op_name
+    if last(impl_parts[1]).head == :struct
+        struct_part = impl_parts[1]
+        #println("struct part: $struct_part")
+        impl_type_name, fields = struct_capture(last(struct_part))
+        impl_parts = impl_parts[2:end]
+
+        op_name = splitdef(last(impl_parts[1]))[:name]
+        interface_name = Symbol(lowerunder_to_firstcaps(String(op_name)))
+    else
+        op_name = splitdef(last(impl_parts[1]))[:name]
+        interface_name = Symbol(lowerunder_to_firstcaps(String(op_name)))
+
+        impl_type_name = Symbol(string(interface_name, get_and_inc_imp_number(interface_name)))
+        fields = []
+    end
+
+    # TODO: Get mutable from declaration?
+    local struct_exp
+    if length(fields) >= 1
+        struct_exp = with_kw(:(mutable struct $impl_type_name <: $interface_name
+                                   $(fields...)
+                               end),
+                             mod,
+                             false)
+    else
+        struct_exp = quote
+            mutable struct $impl_type_name <: $interface_name
+                $(fields...)
+            end
+        end
+    end
+
+    if interface_module isa Nothing
+        qualified_name = op_name
+    else
+        qualified_name = :($interface_module.$op_name)
+    end
+
+    function create_impl_defs(func_sig_dict)
+        # Add impl as first argument, then assign each field in the struct to a local variable at beginning of def
         specific_imp_func_dec = deepcopy(func_sig_dict)
+        specific_imp_func_dec[:name] = qualified_name
         specific_imp_func_dec[:args] = [:(impl::$impl_type_name); specific_imp_func_dec[:args]]
         if length(fields) > 0
             fieldnames = [namify(f) for f in fields]
@@ -376,69 +319,50 @@ function implement_macro(mod, source, implement_expr)
             unpack_expr = :(begin end)
         end
         specific_imp_func_dec[:body] = quote
-            try
-                $unpack_expr
-                $(specific_imp_func_dec[:body])
-            catch
-                src = $(string(source))
-                @error "error at $(src)"
-                rethrow()
-            end
+            $unpack_expr
+            $(specific_imp_func_dec[:body])
         end
-        push!(specific_imp_func_decs, specific_imp_func_dec)
-    end
 
-    joined_args = mi_join_args(func_sig_dicts)
-    joined_params = [parameter_names(e) for e in joined_args]
-    default_imp_func_dec = deepcopy(first_func_sig_dict)
-    default_imp_func_dec[:args] = [:(impl::Nothing); joined_args]
-    default_imp_func_dec[:whereparams] = unique(reduce((x,fsd)->append!(x,get(fsd,:whereparams,[])), func_sig_dicts;init=[]))
-    default_imp_func_dec[:body] = quote
-        try
-            return $(default_imp_func_dec[:name])($impl_type_name(), $(joined_params...))
-        catch
-            src = $(string(source))
-            @error "error at $(src)"
-            rethrow()
+        default_imp_func_dec = deepcopy(func_sig_dict)
+        call_args = def_args_to_call_args(default_imp_func_dec[:args])
+        #call_args_no_types = remove_types_from_args(call_args)
+        call_args_no_types = call_args
+        default_imp_func_dec[:name] = qualified_name
+        default_imp_func_dec[:args] = [:(impl::Nothing); call_args]
+        default_imp_func_dec[:body] = :(return $(default_imp_func_dec[:name])($impl_type_name(),
+                                                                              $(call_args_no_types...)))
+
+        if ~(:rtype in keys(func_sig_dict))
+            func_sig_dict[:rtype] = Any
         end
-    end
-    # TODO should do a typejoin on all retvals
-    default_imp_func_dec[:rtype] = :Any
 
-    if ~(:rtype in keys(first_func_sig_dict))
-        first_func_sig_dict[:rtype] = :Any
+        return (specific_imp_func_dec, default_imp_func_dec)
     end
 
-    interface_module = get_module(mod, interface_name)
+    impl_defs = [(linenum, create_impl_defs(splitdef(funcdef))) for (linenum, funcdef) in impl_parts]
 
-    if length(fields) >= 1
-        struct_exp = with_kw(:(struct $impl_type_name <: $(interface_module).$(interface_name)
-                                   $(fields...)
-                               end),
-                             @__MODULE__,
-                             false)
-    else
-        struct_exp = quote
-            struct $impl_type_name <: $(interface_module).$(interface_name)
-                $(fields...)
-            end
-        end
+    function make_block(impl_def)
+        (line_num, (specific_imp_func_dec, default_imp_func_dec)) = impl_def
+        return quote
+            $line_num
+            $(combinedef(specific_imp_func_dec))
+            $(combinedef(default_imp_func_dec))
+        end 
     end
 
-    wparams = reduce(append!, [get(fsd, :whereparams, []) for fsd in func_sig_dicts]; init=[])
-    wparams = unique(wparams)
-    argtypes = [[get(fsd,:rtype,:Any);get_arg_types(fsd[:args])] for fsd in func_sig_dicts]
-    source_str = string(source)
-    
+    func_blocks = [make_block(impl_def) for impl_def in impl_defs]
+
     result = quote
+        $first_ln_node
         $struct_exp
-        $([combinedef(sifd) for sifd in specific_imp_func_decs]...)
-        $(combinedef(default_imp_func_dec))
+        # Constructor
+        (s::$impl_type_name)(args...) = $(op_name)(s, args...)
+        $(func_blocks...)
         @generated function get_method(imp::Type{$impl_type_name})
-            m = [m for m in methods($(first_func_sig_dict[:name]), Tuple{$impl_type_name, Vararg{Any}})][1]
+            m = [m for m in methods($(op_name), Tuple{$impl_type_name, Vararg{Any}})][1]
             return m
         end
-        (s::$impl_type_name)(args...) = $(first_func_sig_dict[:name])(s, args...)
+        export $impl_type_name #, $op_name, $interface_name
     end
     if display
         println(prettify(result))
@@ -454,17 +378,20 @@ function interface_capture(interface_exp)
     return f, args, R, W
 end
 
-function struct_capture(expr)
-    if expr.args[1].head === :struct
-        @capture(expr.args[1], (struct T_ fields__ end) | (mutable struct T_ fields__ end))
-        fs = [splitdef(a) for a in expr.args[2:end]]
-    else
-        T = nothing
-        fields = []
-        fs = [splitdef(a) for a in expr.args]
+
+function struct_capture(struct_exp::Expr)
+    @capture(struct_exp, struct T_
+                             fields__
+                         end |
+                         mutable struct T_
+                             fields__
+                         end |
+                         struct T_ end |
+                         mutable struct T_ end)
+    if isa(fields, Nothing)
+      fields = []
     end
-    fname = first(fs)[:name]
-    T,fields,fname,fs
+    return T, fields
 end
 
 ###
@@ -475,10 +402,10 @@ function with_policy(f, new_policy)
     result = nothing
     try
         result = f()
-    catch err
-        rethrow()
     finally
         _ = set_policy(last_policy)
+    catch err
+        rethrow()
     end
     return result
 end

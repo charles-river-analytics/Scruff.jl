@@ -279,7 +279,7 @@ function eliminate(var_id, factors)
         sumfact = sum_over(prodfact, var_id)
         # If the node being eliminated is completely isolated from the rest of the network,
         # sumfact will be empty and shouldn't be added
-        if !isnothing(sumfact.dims)
+        if length(sumfact.dims) > 0
             push!(remaining, sumfact)
         end
     end
@@ -291,7 +291,7 @@ end
 #                                                      #
 # Run the variable elimination algorithm               #
 #                                                      #
-# Works with both discrete and continuos variables,    #
+# Works with both discrete and continuous variables,   #
 # using previously determined ranges.                  #
 #                                                      #
 # The second argument is a topologically ordered       #

@@ -60,17 +60,17 @@ function answer(::Marginal, ::Importance, runtime::Runtime, instance::VariableIn
     return Cat(vs, ps)
 end
 
-const Reject = ErrorException("Reject")
-
 """
     rejection_proposal(::Runtime, instance::VariableInstance, parent_values::Tuple)
 
 Return a proposer and scorer to implement standard rejection sampling from the prior.
 It proposes a value for the `instance` from its sfunc, and scores it by the evidence,
-if any. If the score is -Infinity, it throws a Reject exception.
+if any.
 """
 function rejection_proposal(runtime::Runtime, instance::VariableInstance)
-    proposer(parent_values) = (sample(get_sfunc(instance), parent_values), 0.0)
+    sfunc = get_sfunc(instance)
+    proposer(parent_values) = (sample(sfunc, parent_values), 0.0)
+    proposer
 end
     
 function _get_hard_evidence(runtime, instance)::Union{HardScore, Nothing}
@@ -154,6 +154,7 @@ LW(num_particles) = Importance(lw_proposal, num_particles)
 
 function _importance(runtime::Runtime, num_samples::Int, proposal_function::Function,
     samples::Vector{Dict{Symbol, Any}}, lws)
+
     net = runtime.network
     nodes = topsort(get_initial_graph(net))
     proposers = Function[]
@@ -175,12 +176,12 @@ function _importance(runtime::Runtime, num_samples::Int, proposal_function::Func
             end
         end
     end
-    s = 1
-    while s <= num_samples
-        try
-            vnum = 1
-            for v in nodes 
-                if v isa Variable
+
+    function handle_sample(s)
+        vnum = 1
+        for v in nodes 
+            if v isa Variable
+                try
                     inst = current_instance(runtime, v)
                     if !isnothing(interventions[vnum])
                         iv = interventions[vnum]
@@ -189,24 +190,32 @@ function _importance(runtime::Runtime, num_samples::Int, proposal_function::Func
                         proposer = proposers[vnum]
                         pars = get_initial_parents(net, v)
                         parvals = tuple([samples[s][p.name] for p in pars]...)
-                        (x,lw) = proposer(parvals)
+                        (x, lw) = proposer(parvals)
                         pe = get_log_score(evidences[vnum], x)
                         if !isfinite(pe)
-                            throw(Reject)
+                            # Try again
+                            return s
                         end
                         samples[s][v.name] = x
                         lws[s] += lw + pe
                     end
                     vnum += 1
+                catch ex
+                    @error("Error $ex on variable $v")
+                    rethrow(ex)
                 end
             end
-            s += 1
-        catch e
-            if e != Reject
-                throw(e)
-            end
         end
+
+        # Success
+        return s + 1
     end
+
+    s = 1
+    while s <= num_samples
+        s = handle_sample(s)
+    end
+
     for v in nodes
         if v isa Variable
             ps = Dict{output_type(v), Float64}()
@@ -240,18 +249,20 @@ function infer(algorithm::Importance, runtime::InstantRuntime,
     if has_state(runtime, :particles)
         particles = get_state(runtime, :particles)
         # Copy over only values of nodes in the current runtime
+        psamples = particles.samples
+        plog_weights = particles.log_weights
         for i in 1:algorithm.num_particles
             if length(particles.samples) > 0
                 index_into_particles = (i-1) % length(particles.samples) + 1
                 newsample = Dict{Symbol, Any}()
-                oldsample = particles.samples[index_into_particles]
+                oldsample = psamples[index_into_particles]
                 for n in nodes
                     if n.name in keys(oldsample)
                         newsample[n.name] = oldsample[n.name]
                     end
                 end
                 push!(samples, newsample)
-                push!(lws, particles.log_weights[index_into_particles])
+                push!(lws, plog_weights[index_into_particles])
             else
                 push!(samples, Dict{Symbol, Any}())
                 push!(lws, 0.0)
@@ -273,13 +284,13 @@ function infer(algorithm::Importance, runtime::InstantRuntime,
             end
         end
     end
-    for (n,e) in evidence
-        v = get_node(net, n)
+    for (n, e) in evidence
+        v = get_node(net, n; throw_missing=true)
         inst = current_instance(runtime, v)
         post_evidence!(runtime, inst, e)
     end
-    for (n,i) in interventions
-        v = get_node(net, n)
+    for (n, i) in interventions
+        v = get_node(net, n; throw_missing=true)
         inst = current_instance(runtime, v)
         post_intervention!(runtime, inst, i)
     end

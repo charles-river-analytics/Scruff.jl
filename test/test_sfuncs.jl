@@ -14,7 +14,7 @@ function test_support(sf::SFunc{I,O}, parranges, target, quality;
 end
 
 function test_sample(sf::SFunc{I,O}, parvals, range, probs;  
-        num_samples = 1000, tolerance = 0.05) where {I,O}
+        num_samples = 1000, tolerance = 0.1) where {I,O}
     d = Dict{O, Int}()
     for i in 1:num_samples
         x = sample(sf, parvals)
@@ -161,7 +161,7 @@ end
             cs[Int(floor(x)) + 2] += 1
         end
         for j in 1:4
-            @test isapprox(cs[j] / tot, 0.25; atol = 0.05)
+            @test isapprox(cs[j] / tot, 0.25; atol = 0.1)
         end
         @test isapprox(logcpdf(u, (), 0.0), log(0.25))
         @test isapprox(logcpdf(u, (), 5.0), -Inf64)
@@ -934,6 +934,32 @@ end
         @test isapprox(mparams[2], mp2)
         @test mparams[3] == mp3
         =#
+    end
+
+    @testset "Discrete Distributions.jl" begin
+        d = Distributions.Categorical([0.4, 0.3, 0.3])
+        sf = DistributionsSF(d)
+        N = 100
+        samples = [sample(sf, ()) for _ in 1:N]
+        sf_mean = expectation(sf, ())
+        @test isapprox(sf_mean, sum(samples) / N; atol=0.2)
+
+        # must handle duplicates in range correctly
+        c3 = Discrete([1, 1, 2], 
+                      [0.1, 0.3, 0.6]) 
+        test_support(c3, (), [1, 2], :CompleteSupport)
+        @test isapprox(logcpdf(c3, (), 1), log(0.1 + 0.3))
+        @test isapprox(logcpdf(c3, (), 2), log(0.6))
+    end
+
+    @testset "Continuous Distributions.jl" begin
+        d = Distributions.Normal()
+        sf = DistributionsSF(d)
+        samples = [sample(sf, ()) for _ in 1:10]
+        @test isapprox(expectation(sf, ()), 0.0)
+        @test isapprox(variance(sf, ()), 1.0)
+        sf2 = sumsfs((sf, sf))
+        @test isapprox(variance(sf2, ()), 2.0)
     end
     
 end

@@ -46,7 +46,7 @@ function _store_beliefs(wf::WindowFilter, dynrun::DynamicRuntime{T}, instrun::In
     end
 end
 
-function filter_step(wf::WindowFilter, dynrun::DynamicRuntime{T}, variables::Vector{Variable}, time::T, evidence::Dict{Symbol, Score}) where T
+function filter_step(wf::WindowFilter, dynrun::DynamicRuntime{T}, variables::Vector{<:Variable}, time::T, evidence::Dict{Symbol, Score}) where T
     dynnet = get_network(dynrun)
     insts = create_window(wf.window_creator, dynrun, variables, time)
     instrun = instant_runtime_from_instances(dynrun, insts)

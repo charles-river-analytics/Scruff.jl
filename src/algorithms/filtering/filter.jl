@@ -24,5 +24,5 @@ function init_filter!(::Filter, ::DynamicRuntime) end
 
 Run one step of the filter by instantiating the given variables at the given time and passing in the given evidence.
 """
-function filter_step(::Filter, ::DynamicRuntime{T}, ::Vector{Variable}, ::T, ::Dict{Symbol, Score}) where T end
+function filter_step(::Filter, ::DynamicRuntime{T}, ::Vector{<:Variable}, ::T, ::Dict{Symbol, Score}) where T end
 

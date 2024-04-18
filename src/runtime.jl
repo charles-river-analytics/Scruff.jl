@@ -314,7 +314,8 @@ function instantiate!(runtime::DynamicRuntime{T}, node::Node,time::T = current_t
         parents = get_transition_parents(runtime.network, node)
         parenttimes = Vector{T}()
         for p in parents 
-            parinst = latest_instance_before(runtime, p, time, p != node)
+            time_offset = has_timeoffset(runtime.network, node, p)
+            parinst = latest_instance_before(runtime, p, time, !time_offset)
             if isnothing(parinst)
                 error("In instantiate! for ", variable.name, ": parent ", p.name, " not instantiated at time ", time)
             end
@@ -366,7 +367,12 @@ end
 function ensure_all!(runtime::DynamicRuntime, time = current_time(runtime)) :: Dict{Symbol, Instance}
     insts = Dict{Symbol, Instance}()
     for node in get_nodes(runtime)
-        insts[node.name] = ensure_instance!(runtime, node, time)
+        try
+            insts[node.name] = ensure_instance!(runtime, node, time)
+        catch ex
+            @error("Error $ex on $(node.name), $node")
+            rethrow(ex)
+        end
     end
     return insts
 end

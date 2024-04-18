@@ -130,7 +130,7 @@ end
 @impl begin
     struct ConditionalLogcpdf end
 
-    function logcpdf(sf::Conditional{I,J,K,O}, i::K, o::O)::AbstractFloat where {I,J,K,O}
+    function logcpdf(sf::Conditional{I,J,K,O}, i::K, o::O) where {I,J,K,O}
         (ivals, jvals) = split_pars(sf, i)
         sfgen = gensf(sf,ivals)
         return logcpdf(sfgen, jvals, o)
@@ -159,7 +159,7 @@ end
     end
 
     function make_factors(sf::Conditional{I,J,K,O},
-                        range::__OptVec{<:O}, 
+                        range::VectorOption{<:O}, 
                         parranges::NTuple{N,Vector}, 
                         id, 
                         parids::Tuple)::Tuple{Vector{<:Scruff.Utils.Factor}, Vector{<:Scruff.Utils.Factor}} where {I,J,K,O,N}
@@ -240,7 +240,7 @@ end
     struct ConditionalComputePi end
 
     function compute_pi(sf::Conditional{I,J,K,O},
-                     range::__OptVec{<:O}, 
+                     range::VectorOption{<:O}, 
                      parranges::NTuple{N,Vector}, 
                      incoming_pis::Tuple)::Dist{<:O} where {N,I,J,K,O}
 
@@ -275,7 +275,7 @@ end
 
     function send_lambda(sf::Conditional{I,J,K,O},
                        lambda::Score{<:O},
-                       range::__OptVec{<:O},
+                       range::VectorOption{<:O},
                        parranges::NTuple{N,Vector},
                        incoming_pis::Tuple,
                        parent_ix::Integer)::Score where {N,I,J,K,O}
@@ -287,7 +287,7 @@ end
         jinds = cartesian_product(jar)
         result = zeros(Float64, length(parranges[parent_ix]))
         # Need to make sure the target parent range is a Vector{T} rather than a Vector{Any}
-        T = typeof(parranges[parent_ix][1])
+        T = typejoin([typeof(x) for x in parranges[parent_ix]]...)
         target_parrange :: Vector{T} = parranges[parent_ix]
 
         if parent_ix <= length(iranges)

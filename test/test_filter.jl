@@ -21,7 +21,7 @@ import Scruff: make_initial, make_transition
             vvar = vmodel(:v)
             ph = Placeholder{Int}(:p)
             dynnet = DynamicNetwork(Variable[uvar,vvar], VariableGraph(vvar => [uvar]), 
-                VariableGraph(vvar => [uvar]), Placeholder[ph], Placeholder[ph])
+                VariableGraph(vvar => [uvar]), VariableParentTimeOffset(), Placeholder[ph], Placeholder[ph])
             dynrun = Runtime(dynnet)
             inst1 = instantiate!(dynrun, ph, 1)
             # this instance won't be used to create the instant network
@@ -84,7 +84,7 @@ import Scruff: make_initial, make_transition
             vvar = vmodel(:v)
             ph = Placeholder{Int}(:p)
             dynnet = DynamicNetwork(Variable[uvar,vvar], VariableGraph(vvar => [uvar]), 
-                VariableGraph(vvar => [uvar]), Placeholder[ph], Placeholder[ph])
+                VariableGraph(vvar => [uvar]), VariableParentTimeOffset(), Placeholder[ph], Placeholder[ph])
             dynrun = Runtime(dynnet)
             dyninst1 = instantiate!(dynrun, ph, 1)
             # this instance won't be used to create the instant network
@@ -135,7 +135,7 @@ import Scruff: make_initial, make_transition
             vmodel = HomogeneousModel(vsf, vsf)
             vvar = vmodel(:v)
             dynnet = DynamicNetwork(Variable[uvar,vvar], VariableGraph(uvar => [ph], vvar => [uvar]), 
-                VariableGraph(uvar => [ph], vvar => [uvar]), Placeholder[ph], Placeholder[ph])
+                VariableGraph(uvar => [ph], vvar => [uvar]), VariableParentTimeOffset(), Placeholder[ph], Placeholder[ph])
             dynrun = Runtime(dynnet)
             ensure_all!(dynrun)
             instrun = initial_instant_runtime(dynrun)

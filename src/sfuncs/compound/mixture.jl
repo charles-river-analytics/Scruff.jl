@@ -66,7 +66,7 @@ end
 @impl begin
     struct MixtureExpectedStats end
     function expected_stats(sf::Mixture{I,O},
-                          range::__OptVec{<:O}, 
+                          range::VectorOption{<:O}, 
                           parranges::NTuple{N,Vector},
                           pis::NTuple{M,Dist},
                           child_lambda::Score{<:O}) where {I,O,N,M}
@@ -115,7 +115,7 @@ end
     end
 
     function make_factors(sf::Mixture{I,O},
-                        range::__OptVec{<:O}, 
+                        range::VectorOption{<:O}, 
                         parranges::NTuple{N,Vector}, 
                         id, 
                         parids::Tuple)::Tuple{Vector{<:Scruff.Utils.Factor}, Vector{<:Scruff.Utils.Factor}} where {I,O,N}
@@ -159,7 +159,7 @@ end
 @impl begin
     struct MixtureComputePi end
     function compute_pi(sf::Mixture{I,O},
-                     range::__OptVec{<:O}, 
+                     range::VectorOption{<:O}, 
                      parranges::NTuple{N,Vector}, 
                      incoming_pis::Tuple)::Dist{<:O} where {N,I,O}
         function f(i)
@@ -176,13 +176,14 @@ end
     struct MixtureSendLambda end
     function send_lambda(sf::Mixture{I,O},
                        lambda::Score{<:O},
-                       range::__OptVec{<:O},
+                       range::VectorOption{<:O},
                        parranges::NTuple{N,Vector},
                        incoming_pis::Tuple,
                        parent_ix::Integer)::Score where {N,I,O}
 
         # Need to make sure the target parent range is a Vector{T} rather than a Vector{Any}
-        T = typeof(parranges[parent_ix][1])
+        T = typejoin([typeof(x) for x in parranges[parent_ix]]...)
+        
         target_parrange :: Vector{T} = parranges[parent_ix]
         lams = [send_lambda(comp, lambda, range, parranges, incoming_pis, parent_ix) for comp in sf.components]
         scores = [[get_score(lams[j], target_parrange[i]) for i in 1:length(target_parrange)] for j in 1:length(sf.components)]
@@ -200,7 +201,7 @@ end
     struct MixtureSample end
     function sample(sf::Mixture{I,O}, x::I)::O where {I,O}
         probs = sf.probabilities/sum(sf.probabilities)
-        cat = Categorical(probs)
+        cat = Distributions.Categorical(probs)
         which_component = rand(cat)
         component = sf.components[which_component]
         return sample(component, x)
@@ -221,7 +222,7 @@ end
     
     function expectation(sf::Mixture{I,O}, x::I)::O where {I,O}
         probs = sf.probabilities/sum(sf.probabilities)
-        cat = Categorical(probs)
+        cat = Distributions.Categorical(probs)
         which_component = rand(cat)
         component = sf.components[which_component]
         return expectation(component, x)

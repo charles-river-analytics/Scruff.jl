@@ -5,8 +5,7 @@ import Distributions
 """
     mutable struct Normal <: Dist{Float64}
 
-`Normal` defines an *sfunc* representing unconditional Gaussian distributions.  Its
-has no input, its output type is `Float64`, and its parameters are `(mean,standard deviation)`.
+`Normal` defines an *sfunc* representing unconditional Gaussian distributions.
 
 # Additional supported operators
 - `support`
@@ -16,27 +15,9 @@ has no input, its output type is `Float64`, and its parameters are `(mean,standa
 - `bounded_probs`
 - `compute_pi`
 """
-mutable struct Normal <: Dist{Float64}
-    params :: Tuple{Float64, Float64}
-    """
-        Normal(m::Float64, sd::Float64)
-    
-    `Normal`'s constructor
 
-    # Arguments
-    - `m::Float`: the mean of the `Normal`
-    - `sd::Float64`: the standard deviation of the `Normal` 
-    """
-    Normal(m::Float64, sd::Float64) = new((m,sd))
-end
-
-"returns the mean of the `Normal`"
-mean(n::Normal) = n.params[1]
-"returns the standard deviation of the `Normal`"
-sd(n::Normal) = n.params[2]
-
-"returns a `Distributions.Normal` from a `Scruff.SFuncs.Normal`"
-dist(n) = Distributions.Normal(mean(n), sd(n))
+const Normal{T} = DistributionsSF{Distributions.Normal{T}, T}
+Normal(mean, sd) = Normal{typeof(mean)}(mean, sd)
 
 @impl begin
     struct NormalSupport end
@@ -46,9 +27,12 @@ dist(n) = Distributions.Normal(mean(n), sd(n))
             size::Integer, 
             curr::Vector{Float64}) where N
         
+        mu = expectation(sf, ())
+        sd = variance(sf, ())^0.5
+
         if isempty(curr)
-            oldl = mean(sf)
-            oldu = mean(sf)
+            oldl = mu
+            oldu = mu
         else
             oldl = minimum(filter(x -> x > -Inf, curr))
             oldu = maximum(filter(x -> x < Inf, curr))
@@ -59,8 +43,8 @@ dist(n) = Distributions.Normal(mean(n), sd(n))
                 result = [oldl]
                 return result
             else
-                l = oldl - sd(sf)
-                u = oldl + sd(sf)
+                l = oldl - sd
+                u = oldl + sd
                 result = Vector{Float64}()
                 gap = (u-l) / (size-1)
                 push!(result, l)
@@ -115,33 +99,19 @@ end
 end
 
 @impl begin
-    struct NormalSample end
-    function sample(sf::Normal, x::Tuple{})::Float64
-        rand(dist(sf))
-    end
-end
-
-@impl begin
-    struct NormalLogcpdf end
-    function logcpdf(sf::Normal, i::Tuple{}, o::Float64)::AbstractFloat
-        Distributions.logpdf(dist(sf), o)
-    end
-end
-
-@impl begin
     struct NormalBoundedProbsBoundedProbs
         numpartitions::Int64 = 10
     end
 
     function bounded_probs(
             sf::Normal, 
-            range::__OptVec{Float64}, 
+            range::VectorOption{Float64}, 
             parranges::NTuple{N,Vector})::Tuple{Vector{<:AbstractFloat}, Vector{<:AbstractFloat}} where {N}
         
         intervals = make_intervals(range)
         lower = Array{Float64}(undef, length(range))
         upper = Array{Float64}(undef, length(range))
-        d = dist(sf)
+        d = sf.dist
         ls = []
         us = []
         for interval in intervals
@@ -193,9 +163,9 @@ end
 @impl begin
     struct NormalComputePi end
 
-    function compute_pi(sf::Normal, range::__OptVec{Float64}, parranges::NTuple{N,Vector}, 
+    function compute_pi(sf::Normal, range::VectorOption{Float64}, parranges::NTuple{N,Vector}, 
             incoming_pis::Tuple)::Dist{Float64} where {N}
-        Cat(range, collect(map(x -> Distributions.pdf(dist(sf), x), range)))
+        Cat(range, collect(map(x -> Distributions.pdf(sf.dist, x), range)))
     end
 
 end
@@ -203,11 +173,11 @@ end
 @impl begin
     struct NormalExpectedStats end
 
-    function expected_stats(sf::Normal, range::__OptVec{Float64}, parranges::NTuple{N,Vector},
+    function expected_stats(sf::Normal, range::VectorOption{Float64}, parranges::NTuple{N,Vector},
             pis::NTuple{M,Dist},
             child_lambda::Score{Float64}) where {N,M}
 
-        pis = [Distributions.pdf(dist(sf), x) for x in range]
+        pis = [Distributions.pdf(sf.dist, x) for x in range]
         ls = [get_score(child_lambda, r) for r in range]
         prob = pis .* ls
         let totalX = 0.0, totalX2 = 0.0, count = 0.0
@@ -249,8 +219,8 @@ end
 end
 =#
 
-Base.hash(n::Normal, h::UInt) = hash(n.params[2], hash(n.params[1], hash(:Normal, h)))
+Base.hash(n::Normal, h::UInt) = hash(n.dist.σ, hash(n.dist.μ, hash(:Normal, h)))
 Base.isequal(a::Normal, b::Normal) = Base.isequal(hash(a), hash(b))
 Base.:(==)(a::Normal, b::Normal) = Base.isequal(hash(a), hash(b))
-Base.isless(a::Normal, b::Normal) = a.params[1] < b.params[1]
+Base.isless(a::Normal, b::Normal) = a.dist.μ < b.dist.μ
 Base.:<(a::Normal, b::Normal) = Base.isless(a, b)

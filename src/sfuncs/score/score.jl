@@ -6,3 +6,10 @@
     end
 end
 
+include("hardscore.jl")
+include("softscore.jl")
+include("multiplescore.jl")
+include("logscore.jl")
+include("functionalscore.jl")
+include("normalscore.jl")
+include("parzen.jl")

@@ -23,7 +23,7 @@ solve_count = 0
 @impl begin
     struct MyFlipBoundedProbs end
     function bounded_probs(sf::MyFlip, 
-            range::__OptVec{Bool}, 
+            range::VectorOption{Bool}, 
             parranges::NTuple{N,Vector})::Tuple{Vector{<:AbstractFloat}, Vector{<:AbstractFloat}} where {N}
 
         global solve_count += 1

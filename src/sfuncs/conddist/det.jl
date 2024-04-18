@@ -117,7 +117,7 @@ end
     struct DetBoundedProbs end
 
     function bounded_probs(sf::Det{I,O}, 
-                         range::__OptVec{<:O}, 
+                         range::VectorOption{<:O}, 
                          parranges::NTuple{N,Vector})::
                 Tuple{Vector{<:AbstractFloat}, Vector{<:AbstractFloat}} where {I,O,N}
         ps = cartesian_product(parranges)
@@ -136,7 +136,7 @@ end
     struct DetMakeFactors end
 
     function make_factors(sf::Det{I,O},
-                        range::__OptVec{<:O}, 
+                        range::VectorOption{<:O}, 
                         parranges::NTuple{N,Vector}, 
                         id, 
                         parids::Tuple)::Tuple{Vector{<:Scruff.Utils.Factor}, Vector{<:Scruff.Utils.Factor}} where {I,O,N}
@@ -157,7 +157,7 @@ end
     struct DetComputePi end
 
     function compute_pi(sf::Det{I,O},
-                     range::__OptVec{<:O}, 
+                     range::VectorOption{<:O}, 
                      parranges::NTuple{N,Vector}, 
                      incoming_pis::Tuple)::Dist{<:O} where {N,I,O}
 
@@ -184,7 +184,7 @@ end
 
     function send_lambda(sf::Det{I,O},
                        lambda::Score{<:O},
-                       range::__OptVec{<:O},
+                       range::VectorOption{<:O},
                        parranges::NTuple{N,Vector},
                        incoming_pis::Tuple,
                        parent_ix::Integer)::Score where {N,I,O}
@@ -192,7 +192,7 @@ end
         # For a particular parent, we consider all possible values of the other parents.
         # We make a joint argument p, and compute pi(other parents) * lambda(f(p)).
         # Need to make sure the target parent range is a Vector{T} rather than a Vector{Any}
-        T = typeof(parranges[parent_ix][1])
+        T = typejoin([typeof(x) for x in parranges[parent_ix]]...)
         target_parrange :: Vector{T} = parranges[parent_ix]
         otherranges = [r for r in parranges]
         deleteat!(otherranges, parent_ix)
@@ -238,7 +238,7 @@ end
 @impl begin
     struct DetExpectedStats end
     function expected_stats(sf::Det{I,O},
-                          range::__OptVec{<:O}, 
+                          range::VectorOption{<:O}, 
                           parranges::NTuple{N,Vector},
                           pis::NTuple{M,Dist},
                           child_lambda::Score{<:O}) where {I,O,N,M}

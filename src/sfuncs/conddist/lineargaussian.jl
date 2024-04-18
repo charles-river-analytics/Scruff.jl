@@ -13,9 +13,8 @@ export LinearGaussian
 
 See also: [`Conditional`](@ref), [`Normal`](@ref)
 """
-mutable struct LinearGaussian{I <: Tuple{Vararg{Float64}}} <: 
-    Conditional{I, Tuple{}, I, Float64, Normal}
-    sf :: Normal
+mutable struct LinearGaussian{I <: Tuple{Vararg{Float64}}} <: Conditional{I, Tuple{}, I, Float64, Normal{Float64}}
+    sf :: Normal{Float64}
     params :: Tuple{Tuple{Vararg{Float64}}, Float64, Float64}
     """
         function LinearGaussian(weights :: Tuple{Vararg{Float64}}, bias :: Float64, sd :: Float64)
@@ -45,7 +44,7 @@ end
 end
 =#
 
-function gensf(lg::LinearGaussian, inputs::Tuple{Vararg{Float64}})::Normal
+function gensf(lg::LinearGaussian, inputs::Tuple{Vararg{Float64}})::Normal{Float64}
     (weights, bias, sd) = lg.params
     to_sum = inputs .* weights
     mean = isempty(to_sum) ? bias : sum(to_sum) + bias

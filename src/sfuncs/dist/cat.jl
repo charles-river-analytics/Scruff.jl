@@ -1,7 +1,33 @@
-export Cat
+export 
+    Cat,
+    Categorical,
+    Discrete
 
 import ..Utils.normalize
-import Distributions.Categorical
+import Distributions
+
+const Categorical{P, Ps} = DistributionsSF{Distributions.Categorical{P, Ps}, Int}
+Categorical(p::Ps) where {P, Ps <: AbstractVector{P}} = Categorical{Ps, P}(p)
+
+const Discrete{T, P, Ts, Ps} = DistributionsSF{Distributions.DiscreteNonParametric{T, P, Ts, Ps}, T}
+function Discrete(xs::Xs, ps::Ps) where {X, Xs <: AbstractVector{X}, P, Ps <: AbstractVector{P}} 
+    # Handle duplicates
+    sort_order = sortperm(xs)
+    xs = xs[sort_order]
+    ps = ps[sort_order]
+
+    for i=1:(length(xs) - 1)
+        if xs[i] == xs[i + 1]
+            ps[i] += ps[i + 1]
+            ps[i + 1] = 0
+        end
+    end
+    keep = ps .> 0
+    xs = xs[keep]
+    ps = ps[keep]
+      
+    return Discrete{X, P, Xs, Ps}(xs, ps)
+end
 
 @doc """
     mutable struct Cat{O} <: Dist{O, Vector{Real}}
@@ -22,10 +48,10 @@ output value.
 # Type parameters
 - `O`: the output type of the `Cat`
 """
-mutable struct Cat{O} <: Dist{O}
+mutable struct Cat{O, T<:Real} <: Dist{O}
     range :: Vector{O}
     inversemap :: Dict{O, Int}
-    params :: Vector{<:Real}
+    params :: Vector{T}
     original_range :: Vector{O}
     """
         Cat(r::Vector{O}, ps::Vector{<:Real}) where O
@@ -37,7 +63,7 @@ mutable struct Cat{O} <: Dist{O}
     - `ps::Vector{<:Real}`: the set of probabilities for each value in `r` 
       (will be normalized on call to `sample`)
     """
-    function Cat(range::Vector{O}, params::Vector{<:Real}) where O
+    function Cat(range::Vector{O}, params::Vector{T}) where {O, T<:Real}
         @assert length(range) == length(params)
         # Handle repeated values correctly
         d = Dict{O, Float64}()
@@ -47,11 +73,11 @@ mutable struct Cat{O} <: Dist{O}
         r = collect(keys(d))
         ps = [d[x] for x in r]
         inversemap = Dict([x => i for (i,x) in enumerate(r)]) 
-        new{O}(r,inversemap,ps,range)
+        return new{O, T}(r, inversemap, ps, range)
     end
 
     function Cat(d::Dict{O, <:Real}) where O
-        Cat(collect(keys(d)), collect(values(d)))
+        return Cat(collect(keys(d)), collect(values(d)))
     end
 
     """
@@ -63,17 +89,19 @@ mutable struct Cat{O} <: Dist{O}
     function Cat(rps::Vector{<:Pair{O,<:Real}}) where O
         range = first.(rps)
         probs = last.(rps)
+        # This should be moved up into the normal constructor, but there's a bunch of tests 
+        # using Cat to represent densities at finite sets of points...?
+        probs = normalize(probs) 
         return Cat(range, probs)
     end
 end
 
-
 @impl begin
     struct CatSupport end
     function support(sf::Cat{O}, 
-                    parranges::NTuple{N,Vector}, 
-                    size::Integer, 
-                    curr::Vector{<:O}) where {O,N}
+                     parranges::NTuple{N,Vector}, 
+                     size::Integer, 
+                     curr::Vector{<:O}) where {O,N}
         sf.range
     end
 end
@@ -88,18 +116,19 @@ end
 @impl begin
     struct CatSample end
     function sample(sf::Cat{O}, i::Tuple{})::O where {O}
-        i = rand(Categorical(normalize(sf.params)))
+        i = rand(Distributions.Categorical(sf.params))
         return sf.range[i]
     end
 end
 
 @impl begin
     struct CatCpdf end
-    function cpdf(sf::Cat{O}, i::Tuple{}, o::O)::AbstractFloat where {O}
-        if o in sf.range
-            return sf.params[sf.inversemap[o]]
-        else
+    function cpdf(sf::Cat{O}, i::Tuple{}, o::O) where {O}
+        ind = get(sf.inversemap, o, 0)
+        if ind == 0
             return 0.0
+        else
+            return sf.params[ind]
         end
     end
 end

@@ -67,7 +67,7 @@ end
 @impl begin
     struct ApplyComputePi end
     function compute_pi(::Apply{J,O},
-                     range::__OptVec{<:O}, 
+                     range::VectorOption{<:O}, 
                      parranges::NTuple{N,Vector}, 
                      incoming_pis::Tuple)::Dist{<:O} where {N,J<:Tuple,O}
 
@@ -92,7 +92,7 @@ end
 
     function send_lambda(::Apply{J,O},
                        lambda::Score{<:O},
-                       range::__OptVec{<:O},
+                       range::VectorOption{<:O},
                        parranges::NTuple{N,Vector},
                        incoming_pis::Tuple,
                        parent_idx::Integer)::Score where {N,J<:Tuple,O}

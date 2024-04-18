@@ -73,7 +73,7 @@ function dict2tableparams(sf::Table{NumInputs,I,J,K,O,S}, p::Dict{I,Q}) where {N
 end
 =#
 
-function gensf(t::Table{N,I,J,K,O,S}, parvals::NTuple{N,Any}) where {N,I,J,K,O,Q,S}
+function gensf(t::Table{N,I,J,K,O,S}, parvals::NTuple{N,Any}) where {N,I,J,K,O,S}
     inds = tuple([t.inversemaps[k][parvals[k]] for k in 1:length(parvals)]...)
     i = 1
     for k in 1:N

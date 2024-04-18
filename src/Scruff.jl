@@ -9,6 +9,5 @@ include("models.jl")           ## Scruff.Models module
 include("runtime.jl")          ## Scruff module
 include("runtime_utils.jl")    ## Scruff.RTUtils module
 include("algorithms.jl")       ## Scruff.Algorithms module
-include("logger.jl")           ## Scruff module
 
 end

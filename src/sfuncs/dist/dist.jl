@@ -21,7 +21,7 @@ end
     
     function send_lambda(sf::Dist{T},
                        lambda::Score{<:T},
-                       range::__OptVec{<:T},
+                       range::VectorOption{<:T},
                        parranges::NTuple{N,Vector},
                        incoming_pis::Tuple,
                        parent_idx::Integer)::Score where {N,T}
@@ -29,3 +29,10 @@ end
         SoftScore(Float64[], Float64[])
     end
 end
+
+include("distributions.jl")
+include("cat.jl")
+include("constant.jl")
+include("flip.jl")
+include("normal.jl")
+include("uniform.jl")
