@@ -11,7 +11,8 @@ export
     mult_through,
     add_through,
     ancestors,
-    topsort
+    topsort,
+    converged_numeric
 
 ###############################################
 #                                             #
@@ -292,4 +293,42 @@ function topsort(graph::Dict{U, Vector{U}}) :: Vector{U} where U
         end
     end
     return result
+end
+
+diff(x :: Number, y :: Number) = abs(x-y)
+
+function diff(xs :: Dict, ys :: Dict)
+    total = 0.0
+    for (k,v) in keys(xs)
+        total += diff(xs[k], ys[k])
+    end
+    return total
+end
+
+function diff(xs, ys)
+    total = 0.0
+    for i = 1:length(xs)
+        total += diff(xs[i], ys[i])
+    end
+    return total
+end
+
+numparams(x :: Number) = 1
+
+numparams(xs) = sum(map(numparams, xs))
+
+function converged_numeric(oldp, newp, eps::Float64 = 0.01, convergebymax::Bool = false)
+    totaldiff = 0.0
+    num = 0
+    if !(length(newp[k]) == length(oldp[k]))
+        return false
+    end
+    d = diff(newp, oldp)
+    n = numparams(newp)
+    if convergebymax && d / n >= eps
+        return false
+    end
+    totaldiff += d
+    num += n
+    return totaldiff / num < eps
 end

@@ -96,6 +96,19 @@ mutable struct Cat{O, T<:Real} <: Dist{O}
     end
 end
 
+get_params(c :: Cat) = c.params
+
+function set_params!(c :: Cat, p)
+    c.params = p 
+end
+
+@impl begin
+    struct CatConfigure end
+    function configure(sf::Cat{O}, rps::Vector{<:Pair{O, <:Real}}) where O
+        Cat(rps)
+    end
+end
+
 @impl begin
     struct CatSupport end
     function support(sf::Cat{O}, 

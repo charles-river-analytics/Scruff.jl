@@ -2,12 +2,12 @@ using Base.Threads
 
 export
     em,
-    accumulate_stats,
-    bp_info_provider,
-    converged,
-    expected_stats,
-    initial_stats,
-    maximize_stats
+    # accumulate_stats,
+    bp_info_provider
+    # converged,
+    # expected_stats,
+    # initial_stats,
+    # maximize_stats
 
 using Scruff
 using Scruff.Models
@@ -38,8 +38,13 @@ This also supports dynamic and asynchronous operation.
 The algorithm can be any algorithm that computes beliefs over its variables
 that can be used to compute statistics. The algorithm takes only the runtime
 as argument and uses the evidence associated with instances in the runtime.
-Parameters associated with the variables used by the algorithm are found
-in the runtime, associated with instances using the :params key.
+Parameters associated with the variables are generalized to any configuration specification
+that can change an sfunc.
+The configuration specifications used by the algorithm are found
+in the runtime, associated with instances using the :config_spec key.
+The configuration specifications are used by ConfigurableModels.
+In EM, ConfigurableModels and other kinds of models are treated differently.
+Only ConfigurableModels are learned and have statistics computed.
 The models defining the variables in the network must support the operations:
     initial_stats, which produces initial statistics as the basis for
         accumulation
@@ -52,12 +57,12 @@ The default algorithm is three pass BP.
 Along with the algorithm, an initializer is required that does whatever work
 is necessary for the algorithm before the first iteration.
 At the minimum, the initializer should instantiate all variables in the
-initial network and extract initial parameters from the variables into
-the runtime under the :params key.
-Models should provide a get_params operation which gets the initial
-parameters.
+initial network and extract initial spec from the configurable variables into
+the runtime under the :config_spec key.
+At the minimum, get_config should be called on the configurable model to initialize 
+the value of :config_spec.
 A default initializer is provided in initializer.jl, which does only this.
-The EM algorithm will take care of maintaining the parameters in the runtime
+The EM algorithm will take care of maintaining the specs in the runtime
 through the iterations.
 
 In order to accommodate different algorithms, which may use different data
@@ -76,11 +81,11 @@ parameters:
         If this number is negative (the default), there is no maximum.
     epsilon The maximum difference allowed between parameter values for
         convergence to be considered achieved
-    discount_factor The degree to which old statistics should be discounted
-        when considering new examples. For batch mode, this will be zero.
-        For online mode, this will be close to 1. discount_factor is actually
-        a function that takes the runtime as an argument. In many cases it will
-        be constant, but this allows it to change with runtime factors.
+    # discount_factor The degree to which old statistics should be discounted
+    #     when considering new examples. For batch mode, this will be zero.
+    #     For online mode, this will be close to 1. discount_factor is actually
+    #     a function that takes the runtime as an argument. In many cases it will
+    #     be constant, but this allows it to change with runtime factors.
 ===================#
 
 function em(network, data ;
@@ -90,37 +95,39 @@ function em(network, data ;
             info_provider = bp_info_provider, 
             showprogress = false,
             max_iterations = -1, 
-            epsilon = 0.0001, 
-            discount_factor = r -> 0.0,
-            min_iterations = 1,
-            validationset = nothing, # used instead of convergence test
-            convergebymax = false)
+            min_iterations = 1)
     iteration = 0
-    newparams = init_params(network)
+    new_config_specs = init_config_spec(network)
     conv = false
     stats = nothing
     if !isnothing(validationset)
-        validationscore = score(network, newparams, validationset, algorithm, initializer)
+        validationscore = score(network, new_config_spec, validationset, algorithm, initializer)
     end
     while (max_iterations < 0 || iteration < max_iterations) && !(conv && iteration >= min_iterations)
-        # we have to deepcopy the params since its values are a pointer
-        # into the model parameters, which are updated, in many cases, in place
+        # We have to deepcopy the config specs since their values are complex
+        # and are updated, in many cases, in place.
         if showprogress
             println("Iteration ", iteration)
         end
-        oldparams = deepcopy(newparams)
+        old_config_specs = deepcopy(new_config_specs)
         batch = data_batcher(network, data)
-        (stats, newparams) =
+        (stats, new_config_specs) =
             em_iteration(network, batch, algorithm, initializer,
-                         info_provider, discount_factor, stats,
-                         oldparams, showprogress)
+                         info_provider,
+                         old_config_specs, showprogress)
         if isnothing(validationset)
-            conv = converged(oldparams, newparams, epsilon, convergebymax)
+            conv = true
+            for var in get_variables(network)
+                if var.model isa ConfigurableModel
+                    conv = conv && converged(var.model, old_config_specs[var.name], new_config_specs[var.name])
+                end
+            end
+            # conv = converged(old_config_specs, new_config_specs, epsilon, convergebymax)
         else
-            newscore = score(network, newparams, validationset, algorithm, initializer) 
+            newscore = score(network, new_config_specs, validationset, algorithm, initializer) 
             conv = newscore <= validationscore
             if conv
-                newparams = oldparams # roll back
+                new_config_specs = old_config_specs # roll back
             end
             validationscore = newscore
         end
@@ -137,33 +144,30 @@ function em(network, data ;
             println("EM did not converge; terminating after ", iteration, " iterations")
         end
     end
-    return ((conv, iteration), newparams)
+    return ((conv, iteration), new_config_specs)
 end
 
 function em_iteration(network, batch, algorithm, initializer,
-                      info_provider, discount_factor, oldstats, oldparams, showprogress)
+                      info_provider, old_config_specs, showprogress)
     vars = get_variables(network)
+    config_vars = filter(v => v.model isa ConfigurableModel, vars)
 
     # 1: Initialize the statistics
     if showprogress
         println("Initializing statistics")
     end
-    newstats = Dict{Symbol, Any}()
-    newparams = Dict{Symbol, Any}()
-    newruntime = Runtime(network)
+    new_stats = Dict{Symbol, Any}()
+    for var in config_vars
+        new_stats[var.name] = initial_stats[var.model]
+    end
+    new_config_specs = Dict{Symbol, Any}()
+    newruntime = InstantRuntime(network)
 
     # 2: For each example, accumulate statistics
-    # varstats = Array{Any}(undef, (length(batch), length(vars)))
     alock = SpinLock()
     Threads.@threads for i = 1:length(batch)
-    # for i = 1:length(batch)
+    for i = 1:length(batch)
         runtime = deepcopy(newruntime)
-        tvars = get_variables(runtime)
-        for var in tvars
-            set_params!(make_sfunc(var.model), oldparams[var.name])
-        end
-        # we have to call the initializer after we set the params, since we create instances
-        # with the underlying parameter values
         initializer(runtime)
 
         example = batch[i]
@@ -171,7 +175,7 @@ function em_iteration(network, batch, algorithm, initializer,
             println("Accumulating statistics for example ", i)
         end
         # 2.1: Prepare the evidence
-        for var in tvars
+        for var in vars
             inst = current_instance(runtime, var)
             delete_evidence!(runtime, inst)
             if var.name in keys(example)
@@ -189,31 +193,42 @@ function em_iteration(network, batch, algorithm, initializer,
         if showprogress
             println("Computing statistics for example ", i)
         end
-        for j in 1:length(tvars)
-            var = tvars[j]
-            inst = current_instance(runtime, var)
-            sf = get_sfunc(inst)
-            (parentpis, childlam, _) = info_provider(runtime, inst)
-            pars = get_parents(get_network(runtime), var)
-            parranges = [get_range(runtime, current_instance(runtime, p)) for p in pars]
-            parranges = Tuple(parranges)
-            range = get_range(runtime, inst)
-            # sts = operate(runtime, inst, expected_stats, parranges, parentpis, childlam)
-            sts = expected_stats(sf, range, parranges, Tuple(parentpis), childlam)
-            sts = normalize(sts) # We normalize here so we can apply normalization uniformly,
-                                 # whatever the sfunc of the variable. 
-                                 # This is a very important point in the design! 
-                                 # We don't have to normalize the individual sfuncs' expected_stats.
-            lock(alock)
-            if var.name in keys(newstats)
-                newstats[var.name] = accumulate_stats(sf, newstats[var.name], sts)
-            else
-                newstats[var.name] = sts
+        for var in config_vars
+            mod = var.model
+            if mod isa ConfigurableModel
+                inst = current_instance(runtime, var)
+                sf = get_sfunc(inst)
+                info = info_provider(runtime, inst)
+                lock(alock)
+                new_stats[var.name] = update_stats(mod, new_stats[var.name], info)
+                unlock(alock)
+
+                #=
+                (parentpis, childlam, _) = info_provider(runtime, inst)
+                pars = get_parents(get_network(runtime), var)
+                parranges = [get_range(runtime, current_instance(runtime, p)) for p in pars]
+                parranges = Tuple(parranges)
+                range = get_range(runtime, inst)
+                # sts = operate(runtime, inst, expected_stats, parranges, parentpis, childlam)
+                sts = expected_stats(sf, range, parranges, Tuple(parentpis), childlam)
+                sts = normalize(sts) # We normalize here so we can apply normalization uniformly,
+                                    # whatever the sfunc of the variable. 
+                                    # This is a very important point in the design! 
+                                    # We don't have to normalize the individual sfuncs' expected_stats.
+                                    
+                    newstats[]
+                if var.name in keys(newstats)
+                    newstats[var.name] = accumulate_stats(sf, newstats[var.name], sts)
+                else
+                    newstats[var.name] = sts
+                end
+                unlock(alock)
+                =#
             end
-            unlock(alock)
         end
     end
 
+    #= This doesn't make sense in the generalized algorithm
     # 3 blend in the old statistics
     if showprogress
         println("Blending in old statistics")
@@ -230,6 +245,7 @@ function em_iteration(network, batch, algorithm, initializer,
             end
         end
     end
+    =#
 
     # 4 choose the maximizing parameter values and store them in the runtime
     # To implement parameter sharing, we invoke the maximize_stats once per model
@@ -238,6 +254,11 @@ function em_iteration(network, batch, algorithm, initializer,
     if showprogress
         println("Choosing maximizing parameters")
     end
+    for var in config_vars
+        maximize_stats(var.model, new_stats[var.name])
+        new_config_specs[var.name] = get_config_spec(var.model)
+    end
+    #=
     modelvars = Dict{Model, Array{Variable, 1}}()
     for var in vars
         m = var.model
@@ -261,14 +282,18 @@ function em_iteration(network, batch, algorithm, initializer,
             newparams[v.name] = modelparams
         end
     end
-    
-    return (newstats, newparams)
+    =#
+
+    return (new_stats, new_config_specs)
 end
 
-function init_params(network)
+
+function init_config_spec(network)
     result = Dict{Symbol, Any}()
     for var in get_variables(network)
-        result[var.name] = get_params(make_sfunc(var.model, 0, get_dt(var.model)))
+        if var.model isa ConfigurableModel
+            result[var.name] = get_config_spec(var.model)
+        end
     end
     return result
 end
@@ -315,68 +340,30 @@ end
 #     return true
 # end
 
-diff(x :: Number, y :: Number) = abs(x-y)
-
-function diff(xs :: Dict, ys :: Dict)
-    total = 0.0
-    for (k,v) in keys(xs)
-        total += diff(xs[k], ys[k])
-    end
-    return total
-end
-
-function diff(xs, ys)
-    total = 0.0
-    for i = 1:length(xs)
-        total += diff(xs[i], ys[i])
-    end
-    return total
-end
-
-numparams(x :: Number) = 1
-
-numparams(xs) = sum(map(numparams, xs))
-
-function converged(oldp, newp, eps::Float64, convergebymax::Bool = false)
-    # This is written so that if new variables are added to the network
-    # by the inference algorithm, we don't have convergence.
-    # However, if keys are deleted, we can, because all existing keys
-    # might have converged.
-    totaldiff = 0.0
-    num = 0
-    for k in keys(newp)
-        if !(k in keys(oldp))
-            return false
-        end
-        if isnothing(newp[k])
-            break
-        end
-        if !(length(newp[k]) == length(oldp[k]))
-            return false
-        end
-        d = diff(newp[k], oldp[k])
-        n = numparams(newp[k])
-        if convergebymax && d / n >= eps
-            return false
-        end
-        totaldiff += d
-        num += n
-    end
-    return totaldiff / num < eps
-end
-
 function bp_info_provider(runtime, inst)
     net = get_network(runtime)
     var = get_node(inst)
     pars = get_parents(net, var)
     parent_πs :: Array{Array{Any, 1}} =
         collect_messages(runtime, pars, var, :pi_message)
-    λ = get_value(runtime, inst, :lambda)
-    cpd = get_params(inst.sf)
+    child_lam = get_value(runtime, inst, :lambda)
+    # cpd = get_params(inst.sf)
     # cpd = get_value(runtime, inst, :params)
-    return (parent_πs, λ, cpd)
+    pars = get_parents(net, var)
+    parranges = [get_range(runtime, current_instance(runtime, p)) for p in pars]
+    parranges = Tuple(parranges)
+    range = get_range(runtime, inst)
+    # sts = operate(runtime, inst, expected_stats, parranges, parentpis, childlam)
+    sts = expected_stats(sf, range, parranges, Tuple(parentpis), childlam)
+    sts = normalize(sts) # We normalize here so we can apply normalization uniformly,
+                        # whatever the sfunc of the variable. 
+                        # This is a very important point in the design! 
+                        # We don't have to normalize the individual sfuncs' expected_stats.
+    return sts
+    # return (parent_πs, λ, cpd)
 end
 
+#=
 # Score the new parameters on the given validation set
 function score(network, params, validationset, algorithm, initializer)
     result = 0.0
@@ -406,4 +393,7 @@ function score(network, params, validationset, algorithm, initializer)
         unlock(alock)
     end
     return result
+end
+=#
+
 end

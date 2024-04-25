@@ -1,6 +1,7 @@
 export
     Table
     
+    
 """
 mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, S <: SFunc{J,O}} <: Conditional{I, J, K, O, S}
 
@@ -10,7 +11,11 @@ is the count of incoming parent values.
 
 See also:  [`Conditional`](@ref), [`DiscreteCPT`](@ref), [`CLG`](@ref)
 """
+
 mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, S <: SFunc{J,O}} <: Conditional{I, J, K, O, S}
+    params :: Dict{I, S}
+    num_inputs :: Int
+    sf_maker :: Function
     icombos :: Vector{I}
     iranges :: NTuple{NumInputs, Array{Any, 1}}
     isizes :: NTuple{NumInputs, Int}
@@ -30,7 +35,10 @@ mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, S <: SFunc
     - `paramdict` see [`DiscreteCPT`](@ref) and [`CLG`](@ref) for examples
     - `sfmaker` a function from Q to S
     """
-    function Table(J, O, NumInputs::Int, paramdict::Dict{I,Q}, sfmaker::Function) where {I, Q}
+    function Table(J, O, NumInputs::Int, paramdict::Dict{I, <: Any}, sfm::Function) where {I}
+        params = paramdict
+        num_inputs = NumInputs
+        sf_maker = sfm
         K = extend_tuple_type(I,J)
         icombos = keys(paramdict)
         iranges :: Array{Array{Any,1}} = [unique(collect([combo[k] for combo in icombos])) for k in 1:NumInputs]
@@ -50,11 +58,15 @@ mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, S <: SFunc
         for k in 1:length(sortedcombos)
             is = sortedcombos[k]
             q = paramdict[is] 
-            sfs[k] = sfmaker(q)
+            sfs[k] = sfm(q)
         end
-        new{NumInputs, I, J, K, O, S}(sortedcombos, tuple(iranges...), isizes, imults, inversemaps, sfs, Q)
+        new{NumInputs, I, J, K, O, S}(params, num_inputs, sf_maker, sortedcombos, tuple(iranges...), isizes, imults, inversemaps, sfs, Q)
     end
 end
+
+get_params(t :: Table) = t.params
+
+set_params!(t :: Table{I, J, K, O, S}, new_params) where {I, J, K, O, S} = Table(J, O, new_params, t.num_inputs, t.sf_maker)
 
 #=
 function dict2tableparams(sf::Table{NumInputs,I,J,K,O,S}, p::Dict{I,Q}) where {NumInputs,I,J,K,O,Q,S}
