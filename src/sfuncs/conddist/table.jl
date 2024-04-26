@@ -12,8 +12,8 @@ is the count of incoming parent values.
 See also:  [`Conditional`](@ref), [`DiscreteCPT`](@ref), [`CLG`](@ref)
 """
 
-mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, S <: SFunc{J,O}} <: Conditional{I, J, K, O, S}
-    params :: Dict{I, S}
+mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, Q, S <: SFunc{J,O}} <: Conditional{I, J, K, O, S}
+    params :: Dict{I, Q}
     num_inputs :: Int
     sf_maker :: Function
     icombos :: Vector{I}
@@ -22,7 +22,6 @@ mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, S <: SFunc
     imults :: NTuple{NumInputs, Int}
     inversemaps :: NTuple{NumInputs, Dict{Any, Int}}
     sfs :: Array{S, NumInputs}
-    _Q :: Type
     """
         function Table(J, O, NumInputs::Int, paramdict, sfmaker:Function) where {J, O, S <: SFunc{J,O}}
 
@@ -35,7 +34,7 @@ mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, S <: SFunc
     - `paramdict` see [`DiscreteCPT`](@ref) and [`CLG`](@ref) for examples
     - `sfmaker` a function from Q to S
     """
-    function Table(J, O, NumInputs::Int, paramdict::Dict{I, <: Any}, sfm::Function) where {I}
+    function Table(J, O, NumInputs::Int, paramdict::Dict{I, Q}, sfm::Function) where {I, Q}
         params = paramdict
         num_inputs = NumInputs
         sf_maker = sfm
@@ -60,13 +59,13 @@ mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, S <: SFunc
             q = paramdict[is] 
             sfs[k] = sfm(q)
         end
-        new{NumInputs, I, J, K, O, S}(params, num_inputs, sf_maker, sortedcombos, tuple(iranges...), isizes, imults, inversemaps, sfs, Q)
+        new{NumInputs,I,J,K,O,Q,S}(params, num_inputs, sf_maker, sortedcombos, tuple(iranges...), isizes, imults, inversemaps, sfs)
     end
 end
 
 get_params(t :: Table) = t.params
 
-set_params!(t :: Table{I, J, K, O, S}, new_params) where {I, J, K, O, S} = Table(J, O, new_params, t.num_inputs, t.sf_maker)
+set_params!(t :: Table{I,J,K,O,Q,S}, new_params) where {I,J,K,O,Q,S} = Table(J, O, new_params, t.num_inputs, t.sf_maker)
 
 #=
 function dict2tableparams(sf::Table{NumInputs,I,J,K,O,S}, p::Dict{I,Q}) where {NumInputs,I,J,K,O,Q,S}
@@ -86,7 +85,7 @@ function dict2tableparams(sf::Table{NumInputs,I,J,K,O,S}, p::Dict{I,Q}) where {N
 end
 =#
 
-function gensf(t::Table{N,I,J,K,O,S}, parvals::NTuple{N,Any}) where {N,I,J,K,O,S}
+function gensf(t::Table{N}, parvals::NTuple{N,Any}) where {N}
     inds = tuple([t.inversemaps[k][parvals[k]] for k in 1:length(parvals)]...)
     i = 1
     for k in 1:N
@@ -96,13 +95,13 @@ function gensf(t::Table{N,I,J,K,O,S}, parvals::NTuple{N,Any}) where {N,I,J,K,O,S
 end
 
 # STATS
-function do_maximize_stats(t::Table{N,I,J,K,O,S}, sfmaximizers) where {N,I,J,K,O,S}
-    result = Array{t._Q, N}(undef, t.isizes)
+function do_maximize_stats(t::Table{N,I,J,K,O,Q,S}, sfmaximizers) where {N,I,J,K,O,Q,S}
+    result = Array{Q, N}(undef, t.isizes)
     # Since this is a table, the new parameters have to have an entry for each of the original parent values
     for k in 1:length(t.icombos)
         is = t.icombos[k]
-        # FIXME if _Q is not constructable
-        result[k] = get(sfmaximizers, is, t._Q())
+        # FIXME if Q is not constructable
+        result[k] = get(sfmaximizers, is, Q())
     end
     return result
 end

@@ -183,8 +183,9 @@ using Random
     end
 
     ConfigurableCatModel(sf) = SimpleNumeric{Tuple{}, Int, Vector{Float64}, Vector{Float64}}(sf)
-    ConfigurableDiscreteCPTModel{I}(sf) = 
-        SimpleNumeric{I, Vector{Float64}, Dict{I, Vector{Float64}}, Dict{I, Vector{Float64}}}(sf)
+    ConfigurableDiscreteCPTModel(I, sf) = 
+        SimpleNumeric{I, Int, Dict{I, Vector{Float64}}, Dict{I, Vector{Float64}}}(sf)
+        # SimpleNumeric{I, Vector{Float64}, Dict{I, Vector{Float64}}, Dict{I, Vector{Float64}}}(sf)
 
     sf1 = Cat([1,2], [0.1, 0.9])
     mod1 = ConfigurableCatModel(sf1)
@@ -196,13 +197,13 @@ using Random
     #x2 = Cat([1,2,3], [0.2, 0.3, 0.5])()(:x2)
     sf3 = DiscreteCPT([1,2], Dict((1,1) => [0.3, 0.7], (1,2) => [0.6, 0.4], (2,1) => [0.4, 0.6], 
                         (2,2) => [0.7, 0.3], (3,1) => [0.5, 0.5], (3,2) => [0.8, 0.2]))
-    mod3 = ConfigurableDiscreteCPTModel{Tuple{Int, Int}}(sf3)
+    mod3 = ConfigurableDiscreteCPTModel(Tuple{Int, Int}, sf3)
     x3 = Variable(:x3, mod3)
     sf4 = DiscreteCPT([1,2], Dict((1,) => [0.15, 0.85], (2,) => [0.25, 0.75]))
-    mod4 = ConfigurableDiscreteCPTModel{Tuple{Int}}(sf4)
+    mod4 = ConfigurableDiscreteCPTModel(Tuple{Int}, sf4)
     x4 = Variable(:x4, mod4)
     sf5 = DiscreteCPT([1,2], Dict((1,) => [0.35, 0.65], (2,) => [0.45, 0.55]))
-    mod5 = ConfigurableDiscreteCPTModel{Tuple{Int}}(sf5)
+    mod5 = ConfigurableDiscreteCPTModel(Tuple{Int}, sf5)
     x5 = Variable(:x5, mod5)
 
     fivecpdnet = InstantNetwork([x1,x2,x3,x4,x5], VariableGraph(x3=>[x2,x1], x4=>[x3], x5=>[x3]))
