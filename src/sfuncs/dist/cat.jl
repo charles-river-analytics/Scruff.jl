@@ -96,10 +96,17 @@ mutable struct Cat{O, T<:Real} <: Dist{O}
     end
 end
 
-get_params(c :: Cat) = c.params
+@impl begin
+    struct CatGetParams end
+    get_params(c :: Cat) = c.params
+end
 
-function set_params!(c :: Cat, p)
-    c.params = p 
+@impl begin
+    struct CatSetParams! end
+    function set_params!(c :: Cat, p)
+        c.params = p 
+        c
+    end
 end
 
 @impl begin

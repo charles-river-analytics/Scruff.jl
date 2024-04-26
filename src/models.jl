@@ -15,7 +15,7 @@ include("models/homogeneousmodel.jl")
 include("models/variabletimemodel.jl")
 include("models/staticmodel.jl")
 include("models/configurable/configurablemodel.jl")
-include("models/configurable/simpleconfigurable.jl")
+include("models/configurable/parameterized.jl")
 include("models/configurable/simplenumeric.jl")
 
 end

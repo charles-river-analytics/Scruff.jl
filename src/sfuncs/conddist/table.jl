@@ -56,16 +56,24 @@ mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, Q, S <: SF
         sfs = Array{S, NumInputs}(undef, isizes)
         for k in 1:length(sortedcombos)
             is = sortedcombos[k]
-            q = paramdict[is] 
+            q = paramdict[is]
             sfs[k] = sfm(q)
         end
         new{NumInputs,I,J,K,O,Q,S}(params, num_inputs, sf_maker, sortedcombos, tuple(iranges...), isizes, imults, inversemaps, sfs)
     end
 end
 
-get_params(t :: Table) = t.params
+@impl begin
+    struct TableGetParams end
+    get_params(t :: Table) = t.params
+end
 
-set_params!(t :: Table{I,J,K,O,Q,S}, new_params) where {I,J,K,O,Q,S} = Table(J, O, new_params, t.num_inputs, t.sf_maker)
+@impl begin
+    struct TableSetParams! end
+    function set_params!(t :: Table{NumInputs,I,J,K,O,Q,S}, new_params) where {NumInputs,I,J,K,O,Q,S} 
+        Table(J, O, t.num_inputs, new_params, t.sf_maker)
+    end
+end
 
 #=
 function dict2tableparams(sf::Table{NumInputs,I,J,K,O,S}, p::Dict{I,Q}) where {NumInputs,I,J,K,O,Q,S}

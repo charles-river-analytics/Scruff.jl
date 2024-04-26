@@ -6,6 +6,7 @@ using Scruff.RTUtils
 using Scruff.SFuncs
 using Scruff.Operators
 using Scruff.Algorithms
+import Scruff.Algorithms: em, bp_info_provider
 using Scruff.Models
 using Base.Filesystem
 using Random
@@ -213,11 +214,14 @@ using Random
             run = Runtime(fivecpdnet)
             default_initializer(run)
             three_pass_BP(run)
-            v_x3 = get_node(run, :x3)
-            inst = current_instance(run, v_x3)
+            # v_x3 = get_node(run, :x3)
+            # inst = current_instance(run, v_x3)
+            inst = current_instance(run, x3)
             sf = get_sfunc(inst)
-            m1 = get_message(run, get_node(run, :x1), v_x3, :pi_message)
-            m2 = get_message(run, get_node(run, :x2), v_x3, :pi_message)
+            # m1 = get_message(run, get_node(run, :x1), v_x3, :pi_message)
+            # m2 = get_message(run, get_node(run, :x2), v_x3, :pi_message)
+            m1 = get_message(run, x1, x3, :pi_message)
+            m2 = get_message(run, x2, x3, :pi_message)
             l = get_value(run, inst, :lambda)
             info = bp_info_provider(run, inst)
             expected_stats(sf, [1,2], ([1, 2, 3], [1, 2]), (m2, m1), l)
@@ -229,15 +233,15 @@ using Random
             p3 = Dict(:a => 0.10001, :b => [0.20001, 0.30001])
             p4 = Dict(:a => 0.11, :b => [0.20001, 0.30001])
             p5 = Dict(:a => 0.1, :b => [0.2, 0.3], :c => 0.4)
-            @test converged(p1, p2, 0.001, false)
-            @test converged(p1, p3, 0.001, false)
-            @test !converged(p1, p4, 0.001, false)
-            @test !converged(p1, p5, 0.001, false)
-            @test converged(p5, p1, 0.001, false)
+            @test converged_numeric(p1, p2, 0.001)
+            @test converged_numeric(p1, p3, 0.001)
+            @test !converged_numeric(p1, p4, 0.001)
+            @test !converged_numeric(p1, p5, 0.001)
+            @test !converged_numeric(p5, p1, 0.001)
         end
 
     end
-#=
+
     @testset "EM" begin
         @testset "termination" begin
         
@@ -269,7 +273,7 @@ using Random
             end
             
         end
-
+#=
         @testset "learning with Cat" begin
             @testset "on single node" begin
                 data = [Dict(:x1 => 1), Dict(:x1 => 2), Dict(:x1 => 1), Dict(:x1 => 1)]
@@ -464,8 +468,9 @@ using Random
                 @test iteration == 2
                 @test newparams[:x] == [0.75, 0.25]
             end
-        end
 =#
+        end
+
     end
 
 

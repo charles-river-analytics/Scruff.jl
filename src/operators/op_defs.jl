@@ -46,6 +46,10 @@ const FloatType = Float64
                         id, 
                         parids::Tuple)::Tuple{Vector{<:Scruff.Utils.Factor}, Vector{<:Scruff.Utils.Factor}} where {I,O,N}
 
+@interface get_params(sf::SFunc)
+
+@interface set_params!(sf :: SFunc, params)
+
 # TODO vvvvvv Statistics computation not finished - not using anymore, defined for ConfigurableModel
 @interface initial_stats(sf::SFunc)
 

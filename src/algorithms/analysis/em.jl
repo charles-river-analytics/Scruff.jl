@@ -2,12 +2,7 @@ using Base.Threads
 
 export
     em,
-    # accumulate_stats,
     bp_info_provider
-    # converged,
-    # expected_stats,
-    # initial_stats,
-    # maximize_stats
 
 using Scruff
 using Scruff.Models
@@ -88,6 +83,41 @@ parameters:
     #     be constant, but this allows it to change with runtime factors.
 ===================#
 
+function bp_info_provider(runtime, inst)
+    net = get_network(runtime)
+    var = get_node(inst)
+
+    pars = get_parents(net, var)
+    parentpis :: Array{SFunc} =
+        collect_messages(runtime, pars, var, :pi_message)
+    childlam = get_value(runtime, inst, :lambda)
+    # cpd = get_params(inst.sf)
+    # cpd = get_value(runtime, inst, :params)
+    pars = get_parents(net, var)
+    parranges = [get_range(runtime, current_instance(runtime, p)) for p in pars]
+    parranges = Tuple(parranges)
+    range = get_range(runtime, inst)
+    # sts = operate(runtime, inst, expected_stats, parranges, parentpis, childlam)
+    sts = expected_stats(inst.sf, range, parranges, Tuple(parentpis), childlam)
+    sts = normalize(sts) # We normalize here so we can apply normalization uniformly,
+                        # whatever the sfunc of the variable. 
+                        # This is a very important point in the design! 
+                        # We don't have to normalize the individual sfuncs' expected_stats.
+    return sts
+    # return (parent_πs, λ, cpd)
+end
+
+
+function init_config_spec(network)
+    result = Dict{Symbol, Any}()
+    for var in get_variables(network)
+        if var.model isa ConfigurableModel
+            result[var.name] = get_config_spec(var.model)
+        end
+    end
+    return result
+end
+
 function em(network, data ;
             data_batcher = (n,x) -> x, 
             algorithm = three_pass_BP,
@@ -100,9 +130,6 @@ function em(network, data ;
     new_config_specs = init_config_spec(network)
     conv = false
     stats = nothing
-    if !isnothing(validationset)
-        validationscore = score(network, new_config_spec, validationset, algorithm, initializer)
-    end
     while (max_iterations < 0 || iteration < max_iterations) && !(conv && iteration >= min_iterations)
         # We have to deepcopy the config specs since their values are complex
         # and are updated, in many cases, in place.
@@ -111,25 +138,19 @@ function em(network, data ;
         end
         old_config_specs = deepcopy(new_config_specs)
         batch = data_batcher(network, data)
-        (stats, new_config_specs) =
-            em_iteration(network, batch, algorithm, initializer,
+        println("POINT 0")
+        iteration_result = em_iteration(network, batch, algorithm, initializer,
                          info_provider,
                          old_config_specs, showprogress)
-        if isnothing(validationset)
-            conv = true
-            for var in get_variables(network)
-                if var.model isa ConfigurableModel
-                    conv = conv && converged(var.model, old_config_specs[var.name], new_config_specs[var.name])
-                end
-            end
-            # conv = converged(old_config_specs, new_config_specs, epsilon, convergebymax)
-        else
-            newscore = score(network, new_config_specs, validationset, algorithm, initializer) 
-            conv = newscore <= validationscore
-            if conv
-                new_config_specs = old_config_specs # roll back
-            end
-            validationscore = newscore
+        println("POINT 1.5")
+        println("iteration_result = ", iteration_result)
+        (stats, new_config_specs) = iteration_result
+        println("POINT 2")
+        newscore = score(network, new_config_specs, validationset, algorithm, initializer) 
+        println("POINT 3")
+        conv = newscore <= validationscore
+        if conv
+            new_config_specs = old_config_specs # roll back
         end
         iteration += 1
     end
@@ -150,7 +171,7 @@ end
 function em_iteration(network, batch, algorithm, initializer,
                       info_provider, old_config_specs, showprogress)
     vars = get_variables(network)
-    config_vars = filter(v => v.model isa ConfigurableModel, vars)
+    config_vars = filter(v -> v.model isa ConfigurableModel, vars)
 
     # 1: Initialize the statistics
     if showprogress
@@ -158,10 +179,10 @@ function em_iteration(network, batch, algorithm, initializer,
     end
     new_stats = Dict{Symbol, Any}()
     for var in config_vars
-        new_stats[var.name] = initial_stats[var.model]
+        new_stats[var.name] = initial_stats(make_initial(var.model, 0))
     end
     new_config_specs = Dict{Symbol, Any}()
-    newruntime = InstantRuntime(network)
+    newruntime = Runtime(network)
 
     # 2: For each example, accumulate statistics
     alock = SpinLock()
@@ -169,17 +190,21 @@ function em_iteration(network, batch, algorithm, initializer,
     for i = 1:length(batch)
         runtime = deepcopy(newruntime)
         initializer(runtime)
-
+        # Need to get the variables again because we did a deep copy
+        runvars = get_variables(get_network(runtime))
+        config_vars = filter(v -> v.model isa ConfigurableModel, runvars)
+    
+    
         example = batch[i]
         if showprogress
             println("Accumulating statistics for example ", i)
         end
         # 2.1: Prepare the evidence
-        for var in vars
+        for var in runvars
             inst = current_instance(runtime, var)
             delete_evidence!(runtime, inst)
             if var.name in keys(example)
-                post_evidence!(runtime, inst, example[var.name])
+                post_belief!(runtime, inst, example[var.name])
             end
         end
 
@@ -200,7 +225,9 @@ function em_iteration(network, batch, algorithm, initializer,
                 sf = get_sfunc(inst)
                 info = info_provider(runtime, inst)
                 lock(alock)
-                new_stats[var.name] = update_stats(mod, new_stats[var.name], info)
+                sts = accumulate_stats(sf, new_stats[var.name], info)
+                println("sts = ", sts)
+                new_stats[var.name] = sts
                 unlock(alock)
 
                 #=
@@ -254,10 +281,12 @@ function em_iteration(network, batch, algorithm, initializer,
     if showprogress
         println("Choosing maximizing parameters")
     end
+    println("new_config_specs = ", new_config_specs)
     for var in config_vars
-        maximize_stats(var.model, new_stats[var.name])
+        maximize_stats(make_initial(var.model, 0), new_stats[var.name])
         new_config_specs[var.name] = get_config_spec(var.model)
     end
+    println("POINT 1")
     #=
     modelvars = Dict{Model, Array{Variable, 1}}()
     for var in vars
@@ -283,19 +312,11 @@ function em_iteration(network, batch, algorithm, initializer,
         end
     end
     =#
-
-    return (new_stats, new_config_specs)
-end
-
-
-function init_config_spec(network)
-    result = Dict{Symbol, Any}()
-    for var in get_variables(network)
-        if var.model isa ConfigurableModel
-            result[var.name] = get_config_spec(var.model)
-        end
-    end
-    return result
+    println("RETURNING")
+    println("new_stats = ", new_stats)
+    println("new_config_specs = ", new_config_specs)
+    
+    (new_stats, new_config_specs)
 end
 
 # function close(x::Float64, y::Float64, eps::Float64)
@@ -339,29 +360,6 @@ end
 #     println("Returning true")
 #     return true
 # end
-
-function bp_info_provider(runtime, inst)
-    net = get_network(runtime)
-    var = get_node(inst)
-    pars = get_parents(net, var)
-    parent_πs :: Array{Array{Any, 1}} =
-        collect_messages(runtime, pars, var, :pi_message)
-    child_lam = get_value(runtime, inst, :lambda)
-    # cpd = get_params(inst.sf)
-    # cpd = get_value(runtime, inst, :params)
-    pars = get_parents(net, var)
-    parranges = [get_range(runtime, current_instance(runtime, p)) for p in pars]
-    parranges = Tuple(parranges)
-    range = get_range(runtime, inst)
-    # sts = operate(runtime, inst, expected_stats, parranges, parentpis, childlam)
-    sts = expected_stats(sf, range, parranges, Tuple(parentpis), childlam)
-    sts = normalize(sts) # We normalize here so we can apply normalization uniformly,
-                        # whatever the sfunc of the variable. 
-                        # This is a very important point in the design! 
-                        # We don't have to normalize the individual sfuncs' expected_stats.
-    return sts
-    # return (parent_πs, λ, cpd)
-end
 
 #=
 # Score the new parameters on the given validation set

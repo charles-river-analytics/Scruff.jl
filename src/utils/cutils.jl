@@ -299,36 +299,60 @@ diff(x :: Number, y :: Number) = abs(x-y)
 
 function diff(xs :: Dict, ys :: Dict)
     total = 0.0
-    for (k,v) in keys(xs)
+    for k in keys(xs)
         total += diff(xs[k], ys[k])
     end
     return total
 end
 
-function diff(xs, ys)
+function diff(xs :: Vector, ys :: Vector)
     total = 0.0
-    for i = 1:length(xs)
+    for i in eachindex(xs)
         total += diff(xs[i], ys[i])
     end
     return total
 end
 
-numparams(x :: Number) = 1
+function same_structure_and_num_params(:: Number, :: Number) 
+    return (true, 1)
+end
 
-numparams(xs) = sum(map(numparams, xs))
+function same_structure_and_num_params(xs :: Dict, ys :: Dict)
+    if Set(keys(xs)) != Set(keys(ys))
+        return (false, 0)
+    end
+    np = 0
+    for k in keys(xs)
+        (b, n) = same_structure_and_num_params(xs[k], ys[k])
+        if !b
+            return (false, np)
+        else
+            np += n
+        end
+    end
+    return (true, np)
+end
 
-function converged_numeric(oldp, newp, eps::Float64 = 0.01, convergebymax::Bool = false)
-    totaldiff = 0.0
-    num = 0
-    if !(length(newp[k]) == length(oldp[k]))
+function same_structure_and_num_params(xs :: Vector, ys :: Vector)
+    if length(xs) != length(ys)
+        return (false, 0)
+    end
+    np = 0
+    for i in eachindex(xs)
+        (b, n) = same_structure_and_num_params(xs[i], ys[i])
+        if !b
+            return(false, np)
+        else
+            np += n
+        end
+    end
+    return(true, np)
+end
+
+function converged_numeric(oldp, newp, eps::Float64 = 0.01)
+    (same_structure, num_params) = same_structure_and_num_params(oldp, newp)
+    if !same_structure
         return false
     end
-    d = diff(newp, oldp)
-    n = numparams(newp)
-    if convergebymax && d / n >= eps
-        return false
-    end
-    totaldiff += d
-    num += n
-    return totaldiff / num < eps
+    return diff(newp, oldp) / num_params < eps
 end
