@@ -138,16 +138,11 @@ function em(network, data ;
         end
         old_config_specs = deepcopy(new_config_specs)
         batch = data_batcher(network, data)
-        println("POINT 0")
         iteration_result = em_iteration(network, batch, algorithm, initializer,
                          info_provider,
                          old_config_specs, showprogress)
-        println("POINT 1.5")
-        println("iteration_result = ", iteration_result)
         (stats, new_config_specs) = iteration_result
-        println("POINT 2")
         newscore = score(network, new_config_specs, validationset, algorithm, initializer) 
-        println("POINT 3")
         conv = newscore <= validationscore
         if conv
             new_config_specs = old_config_specs # roll back
@@ -187,7 +182,6 @@ function em_iteration(network, batch, algorithm, initializer,
     # 2: For each example, accumulate statistics
     alock = SpinLock()
     Threads.@threads for i = 1:length(batch)
-    for i = 1:length(batch)
         runtime = deepcopy(newruntime)
         initializer(runtime)
         # Need to get the variables again because we did a deep copy
@@ -254,7 +248,6 @@ function em_iteration(network, batch, algorithm, initializer,
             end
         end
     end
-
     #= This doesn't make sense in the generalized algorithm
     # 3 blend in the old statistics
     if showprogress
@@ -281,12 +274,10 @@ function em_iteration(network, batch, algorithm, initializer,
     if showprogress
         println("Choosing maximizing parameters")
     end
-    println("new_config_specs = ", new_config_specs)
     for var in config_vars
         maximize_stats(make_initial(var.model, 0), new_stats[var.name])
         new_config_specs[var.name] = get_config_spec(var.model)
     end
-    println("POINT 1")
     #=
     modelvars = Dict{Model, Array{Variable, 1}}()
     for var in vars
@@ -312,11 +303,7 @@ function em_iteration(network, batch, algorithm, initializer,
         end
     end
     =#
-    println("RETURNING")
-    println("new_stats = ", new_stats)
-    println("new_config_specs = ", new_config_specs)
-    
-    (new_stats, new_config_specs)
+    return (new_stats, new_config_specs)
 end
 
 # function close(x::Float64, y::Float64, eps::Float64)
@@ -361,7 +348,7 @@ end
 #     return true
 # end
 
-#=
+#
 # Score the new parameters on the given validation set
 function score(network, params, validationset, algorithm, initializer)
     result = 0.0
@@ -391,7 +378,4 @@ function score(network, params, validationset, algorithm, initializer)
         unlock(alock)
     end
     return result
-end
-=#
-
 end
