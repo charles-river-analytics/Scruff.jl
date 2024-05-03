@@ -1,6 +1,8 @@
 export 
     Parameterized
 
+import Scruff: make_initial, make_transition
+import Scruff.Operators: initial_stats, accumulate_stats, maximize_stats
 
 # Parameterized is a ConfigurableModel in which the base model is a SimpleModel over an sfunc, and the config_spec has the same datatype as explicitly defined 
 # parameters of the sfunc. The sfunc must have get_params, set_params!, initial_stats, accumulate_stats,
@@ -14,13 +16,22 @@ export
 
 abstract type Parameterized{I,O,C,S} <: ConfigurableModel{I,I,O,C,S} end
 
-make_initial(m :: Parameterized, t) = set_params!(make_initial(base_model(m), t), config_spec(m))
+function make_initial(m :: Parameterized, t) 
+    mod = base_model(m)
+    cs = get_config_spec(m)
+    sf = make_initial(mod, t)
+    set_params!(sf, cs)
+    set_params!(make_initial(base_model(m), t), get_config_spec(m))
+end
 
-make_transition(m :: Parameterized, parent_times, time) = set_params!(make_transition(base_model(m), parent_times, time), config_spec(m))
+make_transition(m :: Parameterized, parent_times, time) = set_params!(make_transition(base_model(m), parent_times, time), get_config_spec(m))
 
-initial_stats(m :: Parameterized) = initial_stats(sf(m))
+initial_stats(m :: Parameterized) = initial_stats(get_sf(m))
 
-accumulate_stats(m :: Parameterized, s1, s2) = accumulate_stats(sf(m), s1, s2)
+accumulate_stats(m :: Parameterized, s1, s2) = accumulate_stats(get_sf(m), s1, s2)
 
-maximize_stats(m :: ConfigurableModel, s) = maximize_stats(sf(m), s)
+function maximize_stats(m :: Parameterized{I, O, S}, stats) where {I,O,S}
+    conf_sp = maximize_stats(get_sf(m), stats)
+    set_config_spec!(m, conf_sp)
+end
 

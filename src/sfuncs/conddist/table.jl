@@ -104,13 +104,11 @@ end
 
 # STATS
 function do_maximize_stats(t::Table{N,I,J,K,O,Q,S}, sfmaximizers) where {N,I,J,K,O,Q,S}
-    result = Array{Q, N}(undef, t.isizes)
-    # Since this is a table, the new parameters have to have an entry for each of the original parent values
-    for k in 1:length(t.icombos)
-        is = t.icombos[k]
-        # FIXME if Q is not constructable
-        result[k] = get(sfmaximizers, is, Q())
-    end
-    return result
+    # result = Dict{I, Q}()
+    # for k in keys(t.params)
+    #     result[k] = sfmaximizers[k]
+    # end
+    # return result
+    sfmaximizers
 end
 # STATS END

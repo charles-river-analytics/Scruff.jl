@@ -142,8 +142,7 @@ function em(network, data ;
                          info_provider,
                          old_config_specs, showprogress)
         (stats, new_config_specs) = iteration_result
-        newscore = score(network, new_config_specs, validationset, algorithm, initializer) 
-        conv = newscore <= validationscore
+        conv = converged_numeric(old_config_specs, new_config_specs)
         if conv
             new_config_specs = old_config_specs # roll back
         end
@@ -174,7 +173,7 @@ function em_iteration(network, batch, algorithm, initializer,
     end
     new_stats = Dict{Symbol, Any}()
     for var in config_vars
-        new_stats[var.name] = initial_stats(make_initial(var.model, 0))
+        new_stats[var.name] = initial_stats(var.model)
     end
     new_config_specs = Dict{Symbol, Any}()
     newruntime = Runtime(network)
@@ -198,7 +197,7 @@ function em_iteration(network, batch, algorithm, initializer,
             inst = current_instance(runtime, var)
             delete_evidence!(runtime, inst)
             if var.name in keys(example)
-                post_belief!(runtime, inst, example[var.name])
+                post_evidence!(runtime, inst, example[var.name])
             end
         end
 
@@ -220,7 +219,6 @@ function em_iteration(network, batch, algorithm, initializer,
                 info = info_provider(runtime, inst)
                 lock(alock)
                 sts = accumulate_stats(sf, new_stats[var.name], info)
-                println("sts = ", sts)
                 new_stats[var.name] = sts
                 unlock(alock)
 
@@ -275,7 +273,7 @@ function em_iteration(network, batch, algorithm, initializer,
         println("Choosing maximizing parameters")
     end
     for var in config_vars
-        maximize_stats(make_initial(var.model, 0), new_stats[var.name])
+        maximize_stats(var.model, new_stats[var.name])
         new_config_specs[var.name] = get_config_spec(var.model)
     end
     #=
@@ -350,32 +348,32 @@ end
 
 #
 # Score the new parameters on the given validation set
-function score(network, params, validationset, algorithm, initializer)
-    result = 0.0
-    alock = SpinLock()
-    Threads.@threads for example in validationset
-        runtime = Runtime(network)
-        tvars = get_variables(runtime)
-        for var in tvars
-            set_params!(make_sfunc(var.model), params[var.name])
-        end
-        # we have to call the initializer after we set the params, since we create instances
-        # with the underlying parameter values
-        initializer(runtime)
-        # Don't set the evidence. Run the algorithm and check the marginal probability of the evidence.
-        algorithm(runtime)
-        localscore = 0
-        for var in tvars
-            inst = current_instance(runtime, var)
-            bel = get_belief(runtime, inst)
-            if var.name in keys(example)
-                prob = bel[example[var.name]]
-                localscore += log(prob)
-            end
-        end
-        lock(alock)
-        result += localscore
-        unlock(alock)
-    end
-    return result
-end
+# function score(network, params, validationset, algorithm, initializer)
+#     result = 0.0
+#     alock = SpinLock()
+#     Threads.@threads for example in validationset
+#         runtime = Runtime(network)
+#         tvars = get_variables(runtime)
+#         for var in tvars
+#             set_params!(make_sfunc(var.model), params[var.name])
+#         end
+#         # we have to call the initializer after we set the params, since we create instances
+#         # with the underlying parameter values
+#         initializer(runtime)
+#         # Don't set the evidence. Run the algorithm and check the marginal probability of the evidence.
+#         algorithm(runtime)
+#         localscore = 0
+#         for var in tvars
+#             inst = current_instance(runtime, var)
+#             bel = get_belief(runtime, inst)
+#             if var.name in keys(example)
+#                 prob = bel[example[var.name]]
+#                 localscore += log(prob)
+#             end
+#         end
+#         lock(alock)
+#         result += localscore
+#         unlock(alock)
+#     end
+#     return result
+# end

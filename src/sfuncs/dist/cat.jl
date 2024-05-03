@@ -99,12 +99,20 @@ end
 @impl begin
     struct CatGetParams end
     get_params(c :: Cat) = c.params
+
+    # function get_params(c :: Cat{O}) where O
+    #     d = Dict{O, Float64}()
+    #     for (i,k) in enumerate(c.range)
+    #         d[k] = c.params[i]
+    #     end
+    #     d
+    # end
 end
 
 @impl begin
     struct CatSetParams! end
     function set_params!(c :: Cat, p)
-        c.params = p 
+        c.params = p
         c
     end
 end
@@ -122,7 +130,7 @@ end
                      parranges::NTuple{N,Vector}, 
                      size::Integer, 
                      curr::Vector{<:O}) where {O,N}
-        sf.range
+        sf.original_range
     end
 end
 
@@ -182,15 +190,20 @@ end
 @impl begin
     struct CatInitialStats end
 
-    function initial_stats(sf::Cat)
-        zeros(Float64, length(sf.original_range))
+    function initial_stats(sf::Cat{T}) where T
+        # d = Dict{T, Float64}()
+        # for k in sf.range
+        #     d[k] = 0.0
+        # end
+        # d
+       zeros(Float64, length(sf.original_range))
     end
 end
 
 @impl begin
     struct CatAccumulateStats end
 
-    function accumulate_stats(sf::Cat, existing_stats, new_stats)
+    function accumulate_stats(sf::Cat{T}, existing_stats, new_stats) where T
         existing_stats .+ new_stats
     end
 end
@@ -205,12 +218,13 @@ end
             lambda::Score{<:O}) where {O,N,M}
         orig = sf.original_range
         ps = zeros(Float64, length(orig))
-        for (i,x) in enumerate(orig)
-            if x in sf.range
+
+        for (i,x) in enumerate(range)
+            if x in orig
                 ps[i] = sf.params[sf.inversemap[x]]
             end
         end
-        ls = [get_score(lambda, r) for r in orig]
+        ls = [get_score(lambda, r) for r in range]
         return ps .* ls
     end
 end
