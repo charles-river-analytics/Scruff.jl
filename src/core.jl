@@ -130,7 +130,7 @@ These two functions need to be defined for every sfunc.
 
 # Type parameters
 - `I`: the input type to the `SFunc` returned by the model's `make_initial` function 
-- `J`: the input type to the `SFunc` used during the `make_trasition` function call
+- `J`: the input type to the `SFunc` used during the `make_transition` function call
 - `O`: the actual type of the variables represented by this model
 """
 abstract type Model{I, J, O} <: ValueTyped{O} end
