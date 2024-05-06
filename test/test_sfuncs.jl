@@ -939,10 +939,10 @@ end
     @testset "Discrete Distributions.jl" begin
         d = Distributions.Categorical([0.4, 0.3, 0.3])
         sf = DistributionsSF(d)
-        N = 100
+        N = 1000
         samples = [sample(sf, ()) for _ in 1:N]
         sf_mean = expectation(sf, ())
-        @test isapprox(sf_mean, sum(samples) / N; atol=0.2)
+        @test isapprox(sf_mean, sum(samples) / N; atol=0.15)
 
         # must handle duplicates in range correctly
         c3 = Discrete([1, 1, 2], 
