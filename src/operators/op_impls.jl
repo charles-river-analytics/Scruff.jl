@@ -40,3 +40,19 @@ end
     end
 end
 
+@impl begin
+    struct DefaultWeightedValues
+        num_samples::Int
+    end
+    function weighted_values(s::Dist)
+        samples = [sample(s, ()) for _ in 1:num_samples]
+        return (samples, ones(num_samples))
+    end
+end
+
+@impl begin
+    struct DefaultFitMLE end
+    function fit_mle(s::Type{D}, ref::D) where {D <: Dist}
+        return ref
+    end
+end

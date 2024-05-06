@@ -130,14 +130,14 @@ These two functions need to be defined for every sfunc.
 
 # Type parameters
 - `I`: the input type to the `SFunc` returned by the model's `make_initial` function 
-- `J`: the input type to the `SFunc` used during the `make_trasition` function call
+- `J`: the input type to the `SFunc` used during the `make_transition` function call
 - `O`: the actual type of the variables represented by this model
 """
 abstract type Model{I, J, O} <: ValueTyped{O} end
 # is_fixed(m) = false
 
-function make_initial(m,t) end
-
+# Define these interfaces:
+function make_initial(m, t) end
 function make_transition(m, parenttimes, time) end
 
 (model::Model)(symbol::Symbol) = instantiate(model, symbol)
@@ -175,13 +175,8 @@ Node{O} = Union{Placeholder{O}, Variable{I,J,O} where {I,J}}
 
 returns the output type `O` of the given parameter
 """
-function output_type(::Variable{I,J,O}) where {I,J,O}
-    return O
-end
-
-function output_type(::Placeholder{O}) where O
-    return O
-end
+output_type(::Variable{I,J,O}) where {I,J,O} = O
+output_type(::Placeholder{O}) where O = O
 
 get_name(node::Node) = node.name
 
@@ -192,7 +187,7 @@ VariableGraph = Dict{Node, Vector{Node}}
     VariableParentTimeOffset = Set{Pair{Node, Node}}
 
 Represents whether a child-parent pair of nodes is time-offset;
-if they are time-offset, they will be in this set.
+if they are time-offset, they will be a set of this type.
 """
 VariableParentTimeOffset = Set{Pair{Node, Node}}
 
