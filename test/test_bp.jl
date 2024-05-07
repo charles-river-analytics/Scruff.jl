@@ -64,8 +64,8 @@ import Scruff.Algorithms: three_pass_BP, loopy_BP, ThreePassBP, LoopyBP, infer, 
         x2 = DiscreteCPT([1, 2], cpd2)
         x3 = DiscreteCPT([1, 2], cpd3)
         x4 = DiscreteCPT([1, 2], cpd4)
-        i1 = indexin(1, x1.sfs[1].range)[1]
-        i2 = indexin(2, x1.sfs[1].range)[1]
+        i1 = indexin(1, x1.__sfs[1].range)[1]
+        i2 = indexin(2, x1.__sfs[1].range)[1]
 
         @testset "compute_pi" begin
             @testset "with one parent" begin

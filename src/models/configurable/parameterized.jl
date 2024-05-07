@@ -16,15 +16,11 @@ import Scruff.Operators: initial_stats, accumulate_stats, maximize_stats
 
 abstract type Parameterized{I,O,C,S} <: ConfigurableModel{I,I,O,C,S} end
 
-function make_initial(m :: Parameterized, t) 
-    mod = base_model(m)
-    cs = get_config_spec(m)
-    sf = make_initial(mod, t)
-    set_params!(sf, cs)
-    set_params!(make_initial(base_model(m), t), get_config_spec(m))
-end
+make_initial(m :: Parameterized, t) = set_params!(make_initial(base_model(m), t), 
+                                                  get_config_spec(m))
 
-make_transition(m :: Parameterized, parent_times, time) = set_params!(make_transition(base_model(m), parent_times, time), get_config_spec(m))
+make_transition(m :: Parameterized, parent_times, time) = set_params!(make_transition(base_model(m), parent_times, time), 
+                                                                      get_config_spec(m))
 
 initial_stats(m :: Parameterized) = initial_stats(get_sf(m))
 

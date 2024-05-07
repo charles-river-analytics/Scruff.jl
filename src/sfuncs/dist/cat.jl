@@ -50,9 +50,9 @@ output value.
 """
 mutable struct Cat{O, T<:Real} <: Dist{O}
     range :: Vector{O}
-    inversemap :: Dict{O, Int}
     params :: Vector{T}
-    original_range :: Vector{O}
+    __inversemap :: Dict{O, Int}
+    __original_range :: Vector{O}
     """
         Cat(r::Vector{O}, ps::Vector{<:Real}) where O
 
@@ -67,13 +67,13 @@ mutable struct Cat{O, T<:Real} <: Dist{O}
         @assert length(range) == length(params)
         # Handle repeated values correctly
         d = Dict{O, Float64}()
-        for (x,p) in zip(range, params)
+        for (x, p) in zip(range, params)
             d[x] = get(d, x, 0) + p
         end
         r = collect(keys(d))
         ps = [d[x] for x in r]
         inversemap = Dict([x => i for (i,x) in enumerate(r)]) 
-        return new{O, T}(r, inversemap, ps, range)
+        return new{O, T}(r, ps, inversemap, range)
     end
 
     function Cat(d::Dict{O, <:Real}) where O
@@ -130,7 +130,7 @@ end
                      parranges::NTuple{N,Vector}, 
                      size::Integer, 
                      curr::Vector{<:O}) where {O,N}
-        sf.original_range
+        sf.__original_range
     end
 end
 
@@ -152,7 +152,7 @@ end
 @impl begin
     struct CatCpdf end
     function cpdf(sf::Cat{O}, i::Tuple{}, o::O) where {O}
-        ind = get(sf.inversemap, o, 0)
+        ind = get(sf.__inversemap, o, 0)
         if ind == 0
             return 0.0
         else
@@ -168,7 +168,7 @@ end
                         ::NTuple{N,Vector})::Tuple{Vector{<:AbstractFloat}, 
                                 Vector{<:AbstractFloat}} where {O,N}
 
-        ps = [x in keys(sf.inversemap) ? sf.params[sf.inversemap[x]] : 0.0 for x in range]
+        ps = [x in keys(sf.__inversemap) ? sf.params[sf.__inversemap[x]] : 0.0 for x in range]
         (ps, ps)
     end
 end
@@ -196,7 +196,7 @@ end
         #     d[k] = 0.0
         # end
         # d
-       zeros(Float64, length(sf.original_range))
+       zeros(Float64, length(sf.__original_range))
     end
 end
 
@@ -216,12 +216,12 @@ end
             ::NTuple{N,Vector},
             ::NTuple{M,Dist},
             lambda::Score{<:O}) where {O,N,M}
-        orig = sf.original_range
+        orig = sf.__original_range
         ps = zeros(Float64, length(orig))
 
         for (i,x) in enumerate(range)
             if x in orig
-                ps[i] = sf.params[sf.inversemap[x]]
+                ps[i] = sf.params[sf.__inversemap[x]]
             end
         end
         ls = [get_score(lambda, r) for r in range]

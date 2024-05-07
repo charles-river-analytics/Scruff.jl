@@ -145,8 +145,8 @@ import Scruff.Algorithms: VE, ve, infer, probability, greedy_order, unconnected_
         dn3 = DiscreteCPT([1,2], Dict((1,1) => [0.3, 0.7], (2,1) => [0.4, 0.6],
                                 (1,2) => [0.5, 0.5], (2,2) => [0.6, 0.4],
                                 (1,3) => [0.7, 0.3], (2,3) => [0.8, 0.2]))
-        i31 = indexin(1, dn3.sfs[1,1].range)[1]
-        i32 = indexin(2, dn3.sfs[1,1].range)[1]
+        i31 = indexin(1, dn3.__sfs[1,1].range)[1]
+        i32 = indexin(2, dn3.__sfs[1,1].range)[1]
         dv3 = dn3()(:dv3)
         cn1 = Normal(-0.1, 1.0)
         cv1 = cn1()(:cv1)

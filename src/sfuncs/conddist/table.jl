@@ -14,14 +14,13 @@ See also:  [`Conditional`](@ref), [`DiscreteCPT`](@ref), [`CLG`](@ref)
 
 mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, Q, S <: SFunc{J,O}} <: Conditional{I, J, K, O, S}
     params :: Dict{I, Q}
-    num_inputs :: Int
     sf_maker :: Function
-    icombos :: Vector{I}
-    iranges :: NTuple{NumInputs, Array{Any, 1}}
-    isizes :: NTuple{NumInputs, Int}
-    imults :: NTuple{NumInputs, Int}
-    inversemaps :: NTuple{NumInputs, Dict{Any, Int}}
-    sfs :: Array{S, NumInputs}
+    __icombos :: Vector{I}
+    __iranges :: NTuple{NumInputs, Array{Any, 1}}
+    __isizes :: NTuple{NumInputs, Int}
+    __imults :: NTuple{NumInputs, Int}
+    __inversemaps :: NTuple{NumInputs, Dict{Any, Int}}
+    __sfs :: Array{S, NumInputs}
     """
         function Table(J, O, NumInputs::Int, paramdict, sfmaker:Function) where {J, O, S <: SFunc{J,O}}
 
@@ -34,21 +33,21 @@ mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, Q, S <: SF
     - `paramdict` see [`DiscreteCPT`](@ref) and [`CLG`](@ref) for examples
     - `sfmaker` a function from Q to S
     """
-    function Table(J, O, NumInputs::Int, paramdict::Dict{I, Q}, sfm::Function) where {I, Q}
-        params = paramdict
-        num_inputs = NumInputs
-        sf_maker = sfm
+    function Table(J, O, NumInputs::Int, paramdict::Dict{I, Q}, sf_maker::Function) where {I, Q}
         K = extend_tuple_type(I,J)
         icombos = keys(paramdict)
         iranges :: Array{Array{Any,1}} = [unique(collect([combo[k] for combo in icombos])) for k in 1:NumInputs]
         isizes = tuple([length(irange) for irange in iranges]...)
+
         m = 1
         ims = zeros(Int, NumInputs)
         for k in NumInputs:-1:1
             ims[k] = m
             m *= isizes[k]
         end
+
         imults = tuple(ims...)
+
         # TODO: Fix ordering of Dict
         inversemaps = tuple([Dict([x => i for (i,x) in enumerate(irange)]) for irange in iranges]...)
         sortedcombos = [tuple(p...) for p in cartesian_product(iranges)]
@@ -57,9 +56,10 @@ mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, Q, S <: SF
         for k in 1:length(sortedcombos)
             is = sortedcombos[k]
             q = paramdict[is]
-            sfs[k] = sfm(q)
+            sfs[k] = sf_maker(q)
         end
-        new{NumInputs,I,J,K,O,Q,S}(params, num_inputs, sf_maker, sortedcombos, tuple(iranges...), isizes, imults, inversemaps, sfs)
+
+        new{NumInputs,I,J,K,O,Q,S}(paramdict, sf_maker, sortedcombos, tuple(iranges...), isizes, imults, inversemaps, sfs)
     end
 end
 
@@ -70,8 +70,8 @@ end
 
 @impl begin
     struct TableSetParams! end
-    function set_params!(t :: Table{NumInputs,I,J,K,O,Q,S}, new_params) where {NumInputs,I,J,K,O,Q,S} 
-        Table(J, O, t.num_inputs, new_params, t.sf_maker)
+    function set_params!(t :: Table{NumInputs,I,J,K,O}, new_params) where {NumInputs,I,J,K,O} 
+        Table(J, O, NumInputs, new_params, t.sf_maker)
     end
 end
 
@@ -94,12 +94,12 @@ end
 =#
 
 function gensf(t::Table{N}, parvals::NTuple{N,Any}) where {N}
-    inds = tuple([t.inversemaps[k][parvals[k]] for k in 1:length(parvals)]...)
+    inds = tuple([t.__inversemaps[k][parvals[k]] for k in 1:length(parvals)]...)
     i = 1
     for k in 1:N
-        i += (inds[k] - 1) * t.imults[k]
+        i += (inds[k] - 1) * t.__imults[k]
     end
-    return t.sfs[i]# Change this to just index on the tuple of indices rather than do the calculation ourselves
+    return t.__sfs[i]# Change this to just index on the tuple of indices rather than do the calculation ourselves
 end
 
 # STATS
