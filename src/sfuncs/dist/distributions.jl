@@ -95,7 +95,7 @@ end
 @impl begin
     struct GeneralFitDistributions end
     function fit_mle(::Type{DistributionsSF{T, O}}, ref::Dist{O}) where {O, T}
-      return DistributionsSF(Distributions.fit_mle(T, weighted_values(ref)...))
+        return DistributionsSF(Distributions.fit_mle(T, weighted_values(ref)...))
     end
 end
 

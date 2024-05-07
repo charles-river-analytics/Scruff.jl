@@ -14,7 +14,6 @@ export
     joint,
     probability,
     probability_bounds,
-    expectation,
     mean
 
 """

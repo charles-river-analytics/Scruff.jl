@@ -37,6 +37,7 @@ const FloatType = Float64
 
 # Stuff inspired by Distributions.jl interfaces (not super consistent in support though - may require some patching / care in declarations)
 @interface fit_mle(t::Type{S}, dat::Dist{O})::S where {O, S <: Dist{O}}
+@interface fit_mle_joint(t::Type{S}, dat::Dist{Tuple{I, O}})::S where {I, O, S <: SFunc{I, O}}
 @interface support_minimum(sf::SFunc{I, O}, i::I)::O where {I, O}
 @interface support_maximum(sf::SFunc{I, O}, i::I)::O where {I, O}
 
