@@ -56,3 +56,17 @@ end
         return ref
     end
 end
+
+@impl begin
+    struct SampledFitMLEJoint end
+    function fit_mle_joint(t::Type{D}, dat::Dist{Tuple{Tuple{}, O}})::D where {O, D <: Dist{O}}
+        samples, weights = weighted_values(dat)
+
+        # Just get the output component (rest should be empty tuple)
+        samples = [s[2] for s in samples]
+
+        cat = Discrete(samples, weights / sum(weights))
+
+        return fit_mle(t, cat)
+    end
+end
