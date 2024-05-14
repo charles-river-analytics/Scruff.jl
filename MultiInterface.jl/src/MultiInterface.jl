@@ -18,10 +18,15 @@ export Interface,
 using MacroTools
 import Parameters: with_kw, @unpack
 
-__policy = nothing
-__num_imps = Dict()
+abstract type Policy end
+OptionalPolicy = Union{Policy, Nothing}
 
-display = false
+abstract type Interface end
+
+__policy::OptionalPolicy = nothing
+__num_imps::Dict{Symbol, Int64} = Dict{Symbol, Int64}()
+
+const display::Bool = false
 
 # This is used to give each impl struct a unique name if not specified
 function get_and_inc_imp_number(imp_type)
@@ -46,12 +51,7 @@ function set_policy(new_policy)
     return old_policy
 end
 
-abstract type Interface end
-
-abstract type Policy end
 get_imp(policy::Policy, args...) = nothing
-
-OptionalPolicy = Union{Policy, Nothing}
 
 function list_impls(imp_type, args_type=nothing)
     if isnothing(args_type)
