@@ -9,7 +9,7 @@ export
 A ConfigurableModel contains an underlying model, and allows the SFuncs returned by the underlying model
 to be configured using a configuration specification. Those SFuncs should support the following operators:
     configure(sf, config_spec), which returns an sfunc (could be fresh or a mutation of sf)
-    converged(sf, old_config_spec, new_config_spec) :: Boolean
+    converged(sf, old_config_spec, new_config_spec) :: Boolean (this is only needed by algorithms like EM)
 
 The type parameters of ConfigurableModel are as follows:
     I : Parents of initial sfunc
