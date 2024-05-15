@@ -134,19 +134,19 @@ import Scruff.Algorithms: VE, ve, infer, probability, greedy_order, unconnected_
 
     @testset "ve" begin
         dn1 = Cat([1,2], [0.1, 0.9])
-        i11 = indexin(1, dn1.range)[1]
-        i12 = indexin(2, dn1.range)[1]
+        i11 = indexin(1, dn1.__compiled_range)[1]
+        i12 = indexin(2, dn1.__compiled_range)[1]
         dv1 = dn1()(:dv1)
         dn2 = Cat([1,2,3], [0.2, 0.3, 0.5])
-        i21 = indexin(1, dn2.range)[1]
-        i22 = indexin(2, dn2.range)[1]
-        i23 = indexin(3, dn2.range)[1]
+        i21 = indexin(1, dn2.__compiled_range)[1]
+        i22 = indexin(2, dn2.__compiled_range)[1]
+        i23 = indexin(3, dn2.__compiled_range)[1]
         dv2 = dn2()(:dv2)
         dn3 = DiscreteCPT([1,2], Dict((1,1) => [0.3, 0.7], (2,1) => [0.4, 0.6],
                                 (1,2) => [0.5, 0.5], (2,2) => [0.6, 0.4],
                                 (1,3) => [0.7, 0.3], (2,3) => [0.8, 0.2]))
-        i31 = indexin(1, dn3.__sfs[1,1].range)[1]
-        i32 = indexin(2, dn3.__sfs[1,1].range)[1]
+        i31 = indexin(1, dn3.__sfs[1,1].__compiled_range)[1]
+        i32 = indexin(2, dn3.__sfs[1,1].__compiled_range)[1]
         dv3 = dn3()(:dv3)
         cn1 = Normal(-0.1, 1.0)
         cv1 = cn1()(:cv1)
