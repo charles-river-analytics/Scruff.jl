@@ -200,54 +200,52 @@ import Scruff: make_initial, make_transition
             end
 
             @testset "Filter step" begin
-                @testset "Without evidence" begin
-                    p101 = 0.1
-                    p102 = 0.9
-                    p20a = 0.5
-                    p20b = 0.5
-                    # Observe v21 = :a
-                    prior111 = p101 * 0.2 + p102 * 0.3
-                    prior112 = p101 * 0.8 + p102 * 0.7
-                    q111 = prior111 * 0.4
-                    q112 = prior112 * 0.9
-                    post111 = q111 / (q111 + q112)
-                    post112 = q112 / (q111 + q112)
-                    # Observe v22 = :b
-                    prior121 = post111 * 0.2 + post112 * 0.3
-                    prior122 = post111 * 0.8 + post112 * 0.7
-                    q121 = prior121 * 0.6
-                    q122 = prior122 * 0.1
-                    post121 = q121 / (q121 + q122)
-                    post122 = q122 / (q121 + q122)
+                p101 = 0.1
+                p102 = 0.9
+                p20a = 0.5
+                p20b = 0.5
+                # Observe v21 = :a
+                prior111 = p101 * 0.2 + p102 * 0.3
+                prior112 = p101 * 0.8 + p102 * 0.7
+                q111 = prior111 * 0.4
+                q112 = prior112 * 0.9
+                post111 = q111 / (q111 + q112)
+                post112 = q112 / (q111 + q112)
+                # Observe v22 = :b
+                prior121 = post111 * 0.2 + post112 * 0.3
+                prior122 = post111 * 0.8 + post112 * 0.7
+                q121 = prior121 * 0.6
+                q122 = prior122 * 0.1
+                post121 = q121 / (q121 + q122)
+                post122 = q122 / (q121 + q122)
 
-                    c1 = Cat([1,2], [0.1, 0.9])
-                    d1 = DiscreteCPT([1, :2], Dict((1,) => [0.2, 0.8], (2,) => [0.3, 0.7]))
-                    c2 = Cat([:a,:b], [0.5, 0.5])
-                    d2 = DiscreteCPT([:a, :b], Dict((1,) => [0.4, 0.6], (2,) => [0.9, 0.1]))
-                    m1 = HomogeneousModel(c1, d1)
-                    m2 = HomogeneousModel(c2, d2)
-                    v1 = m1(:v1)
-                    v2 = m2(:v2)
-                    vars = Variable[v1, v2]
-                    net = DynamicNetwork(vars, VariableGraph(), VariableGraph(v1 => [v1], v2 => [v1]))
-                    pf = SyncPF(1000)
-                    runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    @test isapprox(probability(pf, runtime, v1, 1), p101; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v1, 2), p102; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :a), p20a; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :b), p20b; atol = 0.05)
-                    filter_step(pf, runtime, vars, 1, Dict{Symbol, Score}(:v2 => HardScore(:a)))
-                    @test isapprox(probability(pf, runtime, v1, 1), post111; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v1, 2), post112; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :a), 1.0; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :b), 0.0; atol = 0.05)
-                    filter_step(pf, runtime, vars, 2, Dict{Symbol, Score}(:v2 => HardScore(:b)))
-                    @test isapprox(probability(pf, runtime, v1, 1), post121; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v1, 2), post122; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :a), 0.0; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :b), 1.0; atol = 0.05)
-                end
+                c1 = Cat([1,2], [0.1, 0.9])
+                d1 = DiscreteCPT([1, :2], Dict((1,) => [0.2, 0.8], (2,) => [0.3, 0.7]))
+                c2 = Cat([:a,:b], [0.5, 0.5])
+                d2 = DiscreteCPT([:a, :b], Dict((1,) => [0.4, 0.6], (2,) => [0.9, 0.1]))
+                m1 = HomogeneousModel(c1, d1)
+                m2 = HomogeneousModel(c2, d2)
+                v1 = m1(:v1)
+                v2 = m2(:v2)
+                vars = Variable[v1, v2]
+                net = DynamicNetwork(vars, VariableGraph(), VariableGraph(v1 => [v1], v2 => [v1]))
+                pf = SyncPF(1000)
+                runtime = Runtime(net)
+                init_filter(pf, runtime)
+                @test isapprox(probability(pf, runtime, v1, 1), p101; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v1, 2), p102; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :a), p20a; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :b), p20b; atol = 0.05)
+                filter_step(pf, runtime, vars, 1, Dict{Symbol, Score}(:v2 => HardScore(:a)))
+                @test isapprox(probability(pf, runtime, v1, 1), post111; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v1, 2), post112; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :a), 1.0; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :b), 0.0; atol = 0.05)
+                filter_step(pf, runtime, vars, 2, Dict{Symbol, Score}(:v2 => HardScore(:b)))
+                @test isapprox(probability(pf, runtime, v1, 1), post121; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v1, 2), post122; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :a), 0.0; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :b), 1.0; atol = 0.05)
             end
         end
 
@@ -404,54 +402,52 @@ import Scruff: make_initial, make_transition
             end
 
             @testset "Filter step" begin
-                @testset "Without evidence" begin
-                    p101 = 0.1
-                    p102 = 0.9
-                    p20a = 0.5
-                    p20b = 0.5
-                    # Observe v21 = :a
-                    prior111 = p101 * 0.2 + p102 * 0.3
-                    prior112 = p101 * 0.8 + p102 * 0.7
-                    q111 = prior111 * 0.4
-                    q112 = prior112 * 0.9
-                    post111 = q111 / (q111 + q112)
-                    post112 = q112 / (q111 + q112)
-                    # Observe v22 = :b
-                    prior121 = post111 * 0.2 + post112 * 0.3
-                    prior122 = post111 * 0.8 + post112 * 0.7
-                    q121 = prior121 * 0.6
-                    q122 = prior122 * 0.1
-                    post121 = q121 / (q121 + q122)
-                    post122 = q122 / (q121 + q122)
+                p101 = 0.1
+                p102 = 0.9
+                p20a = 0.5
+                p20b = 0.5
+                # Observe v21 = :a
+                prior111 = p101 * 0.2 + p102 * 0.3
+                prior112 = p101 * 0.8 + p102 * 0.7
+                q111 = prior111 * 0.4
+                q112 = prior112 * 0.9
+                post111 = q111 / (q111 + q112)
+                post112 = q112 / (q111 + q112)
+                # Observe v22 = :b
+                prior121 = post111 * 0.2 + post112 * 0.3
+                prior122 = post111 * 0.8 + post112 * 0.7
+                q121 = prior121 * 0.6
+                q122 = prior122 * 0.1
+                post121 = q121 / (q121 + q122)
+                post122 = q122 / (q121 + q122)
 
-                    c1 = Cat([1,2], [0.1, 0.9])
-                    d1 = DiscreteCPT([1, :2], Dict((1,) => [0.2, 0.8], (2,) => [0.3, 0.7]))
-                    c2 = Cat([:a,:b], [0.5, 0.5])
-                    d2 = DiscreteCPT([:a, :b], Dict((1,) => [0.4, 0.6], (2,) => [0.9, 0.1]))
-                    m1 = HomogeneousModel(c1, d1)
-                    m2 = HomogeneousModel(c2, d2)
-                    v1 = m1(:v1)
-                    v2 = m2(:v2)
-                    vars = Variable[v1, v2]
-                    net = DynamicNetwork(vars, VariableGraph(), VariableGraph(v1 => [v1], v2 => [v1]))
-                    pf = SyncBP()
-                    runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    @test isapprox(probability(pf, runtime, v1, 1), p101; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v1, 2), p102; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :a), p20a; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :b), p20b; atol = 0.05)
-                    filter_step(pf, runtime, vars, 1, Dict{Symbol, Score}(:v2 => HardScore(:a)))
-                    @test isapprox(probability(pf, runtime, v1, 1), post111; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v1, 2), post112; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :a), 1.0; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :b), 0.0; atol = 0.05)
-                    filter_step(pf, runtime, vars, 2, Dict{Symbol, Score}(:v2 => HardScore(:b)))
-                    @test isapprox(probability(pf, runtime, v1, 1), post121; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v1, 2), post122; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :a), 0.0; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :b), 1.0; atol = 0.05)
-                end
+                c1 = Cat([1,2], [0.1, 0.9])
+                d1 = DiscreteCPT([1, :2], Dict((1,) => [0.2, 0.8], (2,) => [0.3, 0.7]))
+                c2 = Cat([:a,:b], [0.5, 0.5])
+                d2 = DiscreteCPT([:a, :b], Dict((1,) => [0.4, 0.6], (2,) => [0.9, 0.1]))
+                m1 = HomogeneousModel(c1, d1)
+                m2 = HomogeneousModel(c2, d2)
+                v1 = m1(:v1)
+                v2 = m2(:v2)
+                vars = Variable[v1, v2]
+                net = DynamicNetwork(vars, VariableGraph(), VariableGraph(v1 => [v1], v2 => [v1]))
+                pf = SyncBP()
+                runtime = Runtime(net)
+                init_filter(pf, runtime)
+                @test isapprox(probability(pf, runtime, v1, 1), p101; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v1, 2), p102; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :a), p20a; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :b), p20b; atol = 0.05)
+                filter_step(pf, runtime, vars, 1, Dict{Symbol, Score}(:v2 => HardScore(:a)))
+                @test isapprox(probability(pf, runtime, v1, 1), post111; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v1, 2), post112; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :a), 1.0; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :b), 0.0; atol = 0.05)
+                filter_step(pf, runtime, vars, 2, Dict{Symbol, Score}(:v2 => HardScore(:b)))
+                @test isapprox(probability(pf, runtime, v1, 1), post121; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v1, 2), post122; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :a), 0.0; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :b), 1.0; atol = 0.05)
             end
         end
 
