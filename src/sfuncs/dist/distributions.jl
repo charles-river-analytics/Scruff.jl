@@ -90,3 +90,30 @@ ConvSupported = Union{Distributions.Bernoulli,
         return DistributionsSF(reduce(Distributions.convolve, dists))
     end
 end
+
+# This won't work for all Distributions
+@impl begin
+    struct GeneralFitDistributions end
+    function fit_mle(::Type{DistributionsSF{T, O}}, ref::Dist{O}) where {O, T}
+        return DistributionsSF(Distributions.fit_mle(T, weighted_values(ref)...))
+    end
+end
+
+# Some implementations are iterative and you can control iters - lets expose that via hyperparams
+IterFitDists = Union{Distributions.Beta,
+                     Distributions.Dirichlet,
+                     Distributions.DirichletMultinomial,
+                     Distributions.Gamma}
+@impl begin
+    # These defaults are a fair bit looser than Distributions.jl
+    struct IterFitDistributions
+        maxiter::Int = 100
+        tol::Float64 = 1e-6
+    end
+
+    function fit_mle(::Type{DistributionsSF{T, O}}, ref::Dist{O}) where {O, T <: IterFitDists}
+        return DistributionsSF(Distributions.fit_mle(T, weighted_values(ref)...;
+                                                     maxiter=maxiter, tol=tol))
+    end
+end
+

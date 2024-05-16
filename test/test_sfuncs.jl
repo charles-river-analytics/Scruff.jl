@@ -939,10 +939,10 @@ end
     @testset "Discrete Distributions.jl" begin
         d = Distributions.Categorical([0.4, 0.3, 0.3])
         sf = DistributionsSF(d)
-        N = 100
+        N = 1000
         samples = [sample(sf, ()) for _ in 1:N]
         sf_mean = expectation(sf, ())
-        @test isapprox(sf_mean, sum(samples) / N; atol=0.2)
+        @test isapprox(sf_mean, sum(samples) / N; atol=0.15)
 
         # must handle duplicates in range correctly
         c3 = Discrete([1, 1, 2], 
@@ -955,11 +955,18 @@ end
     @testset "Continuous Distributions.jl" begin
         d = Distributions.Normal()
         sf = DistributionsSF(d)
-        samples = [sample(sf, ()) for _ in 1:10]
+        num_samples = 1024
+        samples = [sample(sf, ()) for _ in 1:num_samples]
         @test isapprox(expectation(sf, ()), 0.0)
         @test isapprox(variance(sf, ()), 1.0)
         sf2 = sumsfs((sf, sf))
         @test isapprox(variance(sf2, ()), 2.0)
+
+        cat = Discrete(samples, [1.0/num_samples for _ in 1:num_samples])
+        fit_normal = fit_mle(Normal{Float64}, cat)
+
+        @test isapprox(expectation(sf, ()), expectation(fit_normal, ()), atol=0.1)
+        @test isapprox(variance(sf, ()), variance(fit_normal, ()), atol=0.1)
     end
     
 end
