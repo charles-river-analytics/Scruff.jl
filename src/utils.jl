@@ -1,5 +1,7 @@
 module Utils
 
+using StaticArrays
+
 include("utils/factor.jl")
 include("utils/cutils.jl")
 include("utils/simple_graph.jl")
@@ -14,6 +16,14 @@ function _entries(xs::Array)
     return result
 end
 
+function _entries(xs::SVector{N, O}) where {N, O}
+    result = []
+    for i in 1:N
+        append!(result, _entries(xs[i]))
+    end
+    result
+end
+
 _entries(d::Dict) = _entries(collect(map(_entries, values(d))))
 
 _entries(xs::Tuple) = _entries([y for y in xs])
@@ -23,6 +33,10 @@ _entries(x::Number) = [x]
 _entries(::Nothing) = []
 
 _transform(f::Function, xs::Array) = [_transform(f,x) for x in xs]
+
+function _transform(f::Function, xs::SVector{N, O}) where {N, O}
+    StaticArrays.sacollect(SVector{N, Float64}, [_transform(f,x) for x in xs])
+end
 
 _transform(f::Function, d::Dict) = Dict([(k,_transform(f,x)) for (k,x) in d])
 

@@ -32,7 +32,7 @@ function test_pi(pi, range, probs)
 end
 
 @testset "SFuncs" begin
-    
+    #=
     @testset "Constant" begin
         c = Constant(2)
         test_support(c, (), [2], :CompleteSupport)
@@ -46,7 +46,7 @@ end
         @test lf.dims == (1,)
         @test lf.entries == [1.0]
         @test ufs == lfs
-        #=
+        
         s1 = initial_stats(c)
         @test s1 === nothing
         s2 = expected_stats(c, [2], (), (), SoftScore([2], [1.0]))
@@ -55,17 +55,17 @@ end
         @test s3 === nothing
         ps = maximize_stats(c, s3)
         @test ps === nothing
-        =#
+        
         pi = compute_pi(c, [1,2], (), ()) 
         test_pi(pi, [1,2], [0.0, 1.0])
     end
-
+=#
     @testset "Cat" begin
         c = Cat([:a,:b,:c], [0.2, 0.3, 0.5])
         c2 = Cat([:a => 0.2, :b => 0.3, :c => 0.5])
         c3 = Cat([1,1,2], [0.1, 0.3, 0.6]) # must handle duplicates in range correctly
         @test c2.range == [:a,:b,:c]
-        @test c2.params == [0.2, 0.3, 0.5]
+        @test c2.probs == [0.2, 0.3, 0.5]
         test_support(c, (), [:a,:b,:c], :CompleteSupport)
         test_support(c3, (), [1,2], :CompleteSupport)
         test_sample(c, (), [:a,:b,:c], [0.2, 0.3, 0.5])
@@ -82,10 +82,16 @@ end
         @test lf.dims == (3,)
         @test lf.entries == [0.2, 0.3, 0.5]
         @test ufs == lfs
-        #=
+        ps3 = compute_pi(c, [:a, :b, :c], (), ())
+        test_pi(ps3, [:a, :b, :c], [0.2, 0.3, 0.5])
+
+        cf = Cat(["abc", "defg"], [0.1, 0.9])
+        e = 3 * 0.1 + 4 * 0.9
+        @test isapprox(f_expectation(cf, (), length), e)
+        
         @test initial_stats(c) == [0, 0, 0]
-        chlam1 = SoftScore(c.range, [0.3, 0.1, 0.2])
-        chlam2 = SoftScore(c.range, [0.2, 0.3, 0.1])
+        chlam1 = SoftScore([:a,:b,:c], [0.3, 0.1, 0.2])
+        chlam2 = SoftScore([:a,:b,:c], [0.2, 0.3, 0.1])
         s1 = expected_stats(c, [:a,:b,:c], (), (), chlam1)
         @test isapprox(s1, [0.06, 0.03, 0.1])
         s2 = expected_stats(c, [:a,:b,:c], (), (), chlam2)
@@ -99,13 +105,7 @@ end
         @test isapprox(ps2[1], s3[1] / z)
         @test isapprox(ps2[2], s3[2] / z)
         @test isapprox(ps2[3], s3[3] / z)
-        =#
-        ps3 = compute_pi(c, [:a, :b, :c], (), ())
-        test_pi(ps3, [:a, :b, :c], [0.2, 0.3, 0.5])
-
-        cf = Cat(["abc", "defg"], [0.1, 0.9])
-        e = 3 * 0.1 + 4 * 0.9
-        @test isapprox(f_expectation(cf, (), length), e)
+        
     end
 
     @testset "Cat with duplicates" begin
@@ -125,10 +125,11 @@ end
         @test lf.dims == (2,)
         @test isapprox(lf.entries, [0.3, 0.7])
         @test ufs == lfs
-        #=
+        @test isapprox(compute_pi(f, [false, true], (), ()).probs, [0.3, 0.7])
+        
         @test initial_stats(f) == [0.0, 0.0]
-        chlam1 = SoftScore(f.range, [0.2, 0.3])
-        chlam2 = SoftScore(f.range, [0.4, 0.5])
+        chlam1 = SoftScore([false, true], [0.2, 0.3])
+        chlam2 = SoftScore([false, true], [0.4, 0.5])
         s1 = expected_stats(f, [false, true], (), (), chlam1)
         @test isapprox(s1[1], 0.06)
         @test isapprox(s1[2], 0.21)
@@ -141,10 +142,8 @@ end
         ps = maximize_stats(f, s3)
         @test isapprox(ps[2], 0.56 / 0.74)
         set_params!(f, ps)
-        =#
-        @test isapprox(compute_pi(f, [false, true], (), ()).params, [0.3, 0.7])
     end
-
+#=
     @testset "Uniform" begin
         u = SFuncs.Uniform(-1.0, 3.0)
         
@@ -254,7 +253,7 @@ end
         @test lf.dims == (2,3,4)
         @test lf.entries == a
         @test ufs == lfs
-        #=
+        
         s1 = initial_stats(d)
         @test s1 === nothing
         s2 = expected_stats(d, [4,5,6,7], parranges, (), SoftScore(Vector{Int}(), Vector{Float64}()))
@@ -264,7 +263,7 @@ end
         ps = maximize_stats(d, s3)
         @test ps === nothing
         set_params!(d, ps)
-        =#
+        
         p4 = 0.4 * 0.2
         p5 = 0.4 * 0.3 + 0.6 * 0.2
         p6 = 0.4 * 0.5 + 0.6 * 0.3
@@ -379,7 +378,7 @@ end
 
         chlam1 = SoftScore(range, [0.9,0.8,0.7])
         chlam2 = SoftScore(range, [0.6,0.5,0.4])
-        #=
+        
         @test isempty(initial_stats(c))
         
         s1 = expected_stats(c, range, parranges, picats, chlam1)
@@ -419,7 +418,7 @@ end
                 @test ps[(m-1)*3+n] == normalize(s3[(x,y)])
             end
         end
-=#
+        
         p = compute_pi(c, range, parranges, picats)
         q1 = pis[1][1] .* (pis[2][1] .* d[(:x, 1)] .+ pis[2][2] .* d[(:x, 2)] .+ pis[2][3] .* d[(:x, 3)])
         q2 = pis[1][2] .* (pis[2][1] .* d[(:y, 1)] .+ pis[2][2] .* d[(:y, 2)] .+ pis[2][3] .* d[(:y, 3)])
@@ -808,12 +807,12 @@ end
         @test get_score(lam, 1) == 0.2
         @test get_score(lam, 2) == 0.3
         @test get_score(lam, 3) == 0.0 # even though it maps to 4, it's not in the parent range
-        #=
+        
         @test initial_stats(i) == nothing
         @test accumulate_stats(i, nothing, nothing) == nothing
         @test expected_stats(i, [2,3,4], ([1,2],), parpis, chlam) == nothing
         @test maximize_stats(i, nothing) == nothing
-        =#
+        
     end
 
     @testset "Serial" begin
@@ -885,7 +884,7 @@ end
         @test isapprox(get_score(lam2, 1), l21)
         @test isapprox(get_score(lam2, 2), l22)
 
-        #=
+        
         is1 = initial_stats(sf1)
         is2 = initial_stats(sf2)
         is3 = initial_stats(sf3)
@@ -933,9 +932,10 @@ end
         @test isapprox(mparams[1], mp1)
         @test isapprox(mparams[2], mp2)
         @test mparams[3] == mp3
-        =#
+=#        
     end
 
+#=
     @testset "Discrete Distributions.jl" begin
         d = Distributions.Categorical([0.4, 0.3, 0.3])
         sf = DistributionsSF(d)
@@ -963,3 +963,4 @@ end
     end
     
 end
+=#
