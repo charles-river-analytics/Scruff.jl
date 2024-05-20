@@ -39,11 +39,10 @@ mutable struct Cat{N, O} <: Dist{O}
     function Cat(d::Dict{O, Float64}) where {O}
         ks = keys(d)
         N = length(ks)
-        range_vec = [ks[i] for i in 1:N]
-        probs_vec = [d[ks[i]] for i in 1:N]
+        probs_vec = [get(d, i, 0.0) for i in 1:N]
         # data = CatData{N, O}(range_vec, probs_vec)
         # return new{N, O}(data)
-        return new{N, O}(range_vec, probs_vec)
+        return new{N, O}(collect(ks), probs_vec)
     end
 
     function Cat(rps::Vector{<:Pair{O, Float64}}) where {O}
