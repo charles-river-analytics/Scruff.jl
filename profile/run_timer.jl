@@ -14,7 +14,7 @@ include("instant_importance.jl")
 include("dynamic_bp.jl")
 include("dynamic_pf.jl")
 
-println("UNOPTIMIZED\n")
+println("TYPE OPTIMIZED\n")
 
 println("Instant network using BP")
 # Arguments are number of values in range of each node
