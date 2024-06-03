@@ -14,7 +14,7 @@ using Random
 @testset "EM" begin
     
     @testset "Cat operations" begin
-        range = [1,2,3]
+        range = [1, 2, 3]
         x = Cat(range, [0.2, 0.3, 0.5])
 
         @testset "initial_stats" begin
