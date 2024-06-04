@@ -243,3 +243,16 @@ end
         return sum / total
     end
 end
+
+@impl begin
+    function weighted_values(sf::Union{Discrete, Categorical})
+        d = sf.dist
+        return (d.support, d.p)
+    end
+end
+
+@impl begin
+    function weighted_values(sf::Cat)
+        return (sf.range, sf.params)
+    end
+end

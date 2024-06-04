@@ -6,7 +6,16 @@ MultiInterface.get_imp(::Nothing, args...) = nothing
 # Being specific here has big perf implact due to type-stability
 const FloatType = Float64
 
-@interface forward(sf::SFunc{I,O}, i::I)::Dist{O} where {I,O}
+@interface forward(sf::SFunc{I, O}, i::I)::Dist{O} where {I, O}
+
+# Provide a set of weighted values that characterize the distribution
+# (e.g. such that expectations can be well approximated E[f(x)] \approx \sum w_i f(x_i) / \sum w_i
+# It is up to the implementation / policy how many to return
+# So e.g. discretely supported distributions can return a precise value
+# while continuous distributions can return some approximate set of samples
+# controlled by an op_impl hyper parameter
+@interface weighted_values(d::Dist{O})::Tuple{Vector{<:O}, Vector{FloatType}} where {O}
+
 @interface inverse(sf::SFunc{I,O}, o::O)::Score{I} where {I,O}
 @interface is_deterministic(sf::SFunc)::Bool
 @interface sample(sf::SFunc{I,O}, i::I)::O where {I,O}
@@ -25,9 +34,16 @@ const FloatType = Float64
 @interface get_log_score(sf::SFunc{Tuple{I},O}, i::I)::AbstractFloat where {I,O}
 # Return a new SFunc that is the result of summing samples from each constituent SFunc
 @interface sumsfs(fs::NTuple{N, <:SFunc{I, O}})::SFunc{I, O} where {N, I, O}
-@interface fit_mle(t::Type{S}, dat::SFunc{I, O})::S where {I, O, S <: SFunc{I, O}}
+
+# Stuff inspired by Distributions.jl interfaces (not super consistent in support though - may require some patching / care in declarations)
+@interface fit_mle(t::Type{S}, dat::Dist{O})::S where {O, S <: Dist{O}}
+@interface fit_mle_joint(t::Type{S}, dat::Dist{Tuple{I, O}})::S where {I, O, S <: SFunc{I, O}}
 @interface support_minimum(sf::SFunc{I, O}, i::I)::O where {I, O}
 @interface support_maximum(sf::SFunc{I, O}, i::I)::O where {I, O}
+
+# One output SFunc for each entry in O (and vice-versa). TODO more specific type signatures
+@interface make_marginals(sf::SFunc{I, <:Tuple})::NTuple{<:Any, <:SFunc{I}} where {I}
+@interface join_marginals(sfs::NTuple{<:Any, <:SFunc{I}})::SFunc{I, <:Tuple} where {I}
 
 @interface support(sf::SFunc{I,O}, 
                    parranges::NTuple{N,Vector}, 
