@@ -20,9 +20,9 @@ import Scruff.Algorithms: three_pass_BP, loopy_BP, ThreePassBP, LoopyBP, infer, 
 
         @testset "compute_pi" begin
             p = compute_pi(x, [1,2,3], (), ())
-            i1 = indexin(1, p.range)[1]
-            i2 = indexin(2, p.range)[1]
-            i3 = indexin(3, p.range)[1]
+            i1 = indexin(1, p.__compiled_range)[1]
+            i2 = indexin(2, p.__compiled_range)[1]
+            i3 = indexin(3, p.__compiled_range)[1]
             @test p.params[i1] == 0.2
             @test p.params[i2] == 0.3
             @test p.params[i3] == 0.5
@@ -64,8 +64,8 @@ import Scruff.Algorithms: three_pass_BP, loopy_BP, ThreePassBP, LoopyBP, infer, 
         x2 = DiscreteCPT([1, 2], cpd2)
         x3 = DiscreteCPT([1, 2], cpd3)
         x4 = DiscreteCPT([1, 2], cpd4)
-        i1 = indexin(1, x1.sfs[1].range)[1]
-        i2 = indexin(2, x1.sfs[1].range)[1]
+        i1 = indexin(1, x1.__sfs[1].__compiled_range)[1]
+        i2 = indexin(2, x1.__sfs[1].__compiled_range)[1]
 
         @testset "compute_pi" begin
             @testset "with one parent" begin
@@ -299,8 +299,8 @@ import Scruff.Algorithms: three_pass_BP, loopy_BP, ThreePassBP, LoopyBP, infer, 
                 0.5 * (0.9 * 0.6 + 0.1 * 0.7)
             pb = 1 - pa
             ps = compute_pi(x, range, parranges, parpis)
-            i1 = indexin(1, ps.range)[1]
-            i2 = indexin(2, ps.range)[1]
+            i1 = indexin(1, ps.__compiled_range)[1]
+            i2 = indexin(2, ps.__compiled_range)[1]
             @test isapprox(ps.params[i1], pa)
             @test isapprox(ps.params[i2], pb)
         end

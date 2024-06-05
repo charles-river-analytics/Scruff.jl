@@ -117,6 +117,74 @@ end
     end
 end
 
+# STATS
+@impl begin
+    struct ConditionalInitialStats end
+
+    function initial_stats(::Conditional{I}) where {I}
+        Dict{I,Any}()
+    end
+end
+
+@impl begin
+    struct ConditionalAccumulateStats end
+
+    function accumulate_stats(cond::Conditional, existing_stats, new_stats)
+        if isnothing(new_stats) return existing_stats end
+        result = copy(existing_stats)
+        for (i,stat) in new_stats
+            sf = gensf(cond, i)
+            exist = get(result, i, initial_stats(sf))
+            next = accumulate_stats(sf, exist, stat)
+            result[i] = next
+        end
+        return result
+    end
+end
+
+@impl begin
+    struct ConditionalExpectedStats end
+
+    function expected_stats(cond::Conditional, 
+            range::Vector{O}, 
+            parranges::NTuple{N,Vector},
+            parent_pis::NTuple{M,Dist},
+            lambda::Score{<:O}) where {O,N,M}
+
+        (iranges, jranges) = split_pars(cond, parranges)
+        iinds = cartesian_product(collect(map(r -> collect(1:length(r)), iranges)))
+        (ipis, jpis) = split_pars(cond, parent_pis)
+        result = Dict()
+        for iind in iinds
+            ival = [iranges[r][iind[r]] for r in 1:length(iranges)]
+            sf = gensf(cond, tuple(ival...))
+            ipi = reduce(*, (bounded_probs(ipis[r], [iind[r]], ())[1][1] for r in 1:length(iranges)))
+            innerstat = expected_stats(sf, range, jranges, jpis, lambda)
+            result[tuple(ival...)] = mult_through(innerstat, ipi)
+        end
+        return result
+    end
+end
+
+@impl begin
+    struct ConditionalMaximizeStats end
+
+    function maximize_stats(cond::Conditional, stats)
+        qs = Dict()
+        if !isnothing(stats)
+            for (i,st) in stats
+                sf = gensf(cond, i)
+                q = maximize_stats(sf, st)
+                qs[i] = q
+            end
+        end
+        result = do_maximize_stats(cond, qs)
+        return result # Must be written separately for each kind of Conditional
+    end
+end
+
+# STATS END 
+
 @impl begin
     struct ConditionalSample end
 

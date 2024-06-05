@@ -41,9 +41,8 @@ function Separable(range::Vector{O}, probabilities :: Vector{Float64}, compparam
     J = Tuple{IS...}
 
     # Explicit typing is necessary to ensure that the cpts passed to Mixture all have the same type.
-    function make_cpt(i,I)::SFunc{J,O}
-        cpt::Table{1, I, Tuple{}, I, O, <:Dist{O}} =
-           DiscreteCPT(range, compparams[i])
+    function make_cpt(i, I)::SFunc{J,O}
+        cpt::Table{1, I, Tuple{}, I, O} = DiscreteCPT(range, compparams[i])
         extended::SFunc{J,O} = Extend(J, cpt, i)
         return extended
     end

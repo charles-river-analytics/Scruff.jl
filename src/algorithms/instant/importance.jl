@@ -234,8 +234,8 @@ function _importance(runtime::Runtime, num_samples::Int, proposal_function::Func
 end
 
 function infer(algorithm::Importance, runtime::InstantRuntime,
-    evidence::Dict{Symbol, Score} = Dict{Symbol, Score}(), 
-    interventions::Dict{Symbol, Dist} = Dict{Symbol, Dist}(),
+    evidence::Dict{Symbol, <:Score} = Dict{Symbol, Score}(), 
+    interventions::Dict{Symbol, <:Dist} = Dict{Symbol, Dist}(),
     placeholder_beliefs::Dict{Symbol, Dist} = get_placeholder_beliefs(runtime))
     net = get_network(runtime)
     nodes = get_nodes(net)

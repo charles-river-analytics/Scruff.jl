@@ -47,7 +47,7 @@ Uses the algorithm state stored in `runtime` and stores the next state in `runti
 function refine(algorithm::IterativeAlgorithm, runtime::InstantRuntime) end
 
 function infer(algorithm::IterativeAlgorithm, runtime::InstantRuntime, 
-    evidence::Vector{Tuple{Symbol, <:Score}}, interventions::Vector{Tuple{Symbol, <:Dist}}, placeholder_beliefs::Vector{<:Dist})
+    evidence::Dict{Symbol, <:Score}, interventions::Dict{Symbol, <:Dist}, placeholder_beliefs::Dict{Symbol, <:Dist})
     prepare(algorithm, runtime, placeholder_beliefs, evidence, interventions)
     refine(algorithm, runtime)
 end

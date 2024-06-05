@@ -169,7 +169,8 @@ end
     end
 
 end
-#=
+
+# STATS
 @impl begin
     struct NormalExpectedStats end
 
@@ -217,7 +218,7 @@ end
         return (mean, std)
     end
 end
-=#
+# STATS
 
 Base.hash(n::Normal, h::UInt) = hash(n.dist.σ, hash(n.dist.μ, hash(:Normal, h)))
 Base.isequal(a::Normal, b::Normal) = Base.isequal(hash(a), hash(b))

@@ -157,7 +157,7 @@ For expanders, it recursively sets the ranges of the subnetworks at depth - 1.
 Returns a flag indicating whether any instance has a changed range.
 """
 function set_ranges!(runtime::InstantRuntime, 
-    evidence::Dict{Symbol,Score} = Dict{Symbol, Score}(),
+    evidence::Dict{Symbol, <:Score} = Dict{Symbol, Score}(),
     size :: Int = 10, depth :: Int = 1, 
     order = topsort(get_initial_graph(get_network(runtime))),
     placeholder_beliefs = get_placeholder_beliefs(runtime))
