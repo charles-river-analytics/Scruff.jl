@@ -173,7 +173,7 @@ function em_iteration(network, batch, algorithm, initializer,
     end
     new_stats = Dict{Symbol, Any}()
     for var in config_vars
-        new_stats[var.name] = initial_stats(var.model)
+        new_stats[get_name(var)] = initial_stats(var.model)
     end
     new_config_specs = Dict{Symbol, Any}()
     newruntime = Runtime(network)
@@ -185,8 +185,7 @@ function em_iteration(network, batch, algorithm, initializer,
         initializer(runtime)
         # Need to get the variables again because we did a deep copy
         runvars = get_variables(get_network(runtime))
-        config_vars = filter(v -> v.model isa ConfigurableModel, runvars)
-    
+        config_vars_batch = filter(v -> v.model isa ConfigurableModel, runvars)
     
         example = batch[i]
         if showprogress
@@ -197,7 +196,7 @@ function em_iteration(network, batch, algorithm, initializer,
             inst = current_instance(runtime, var)
             delete_evidence!(runtime, inst)
             if var.name in keys(example)
-                post_evidence!(runtime, inst, example[var.name])
+                post_evidence!(runtime, inst, example[get_name(var)])
             end
         end
 
@@ -211,40 +210,40 @@ function em_iteration(network, batch, algorithm, initializer,
         if showprogress
             println("Computing statistics for example ", i)
         end
-        for var in config_vars
-            mod = var.model
-            if mod isa ConfigurableModel
-                inst = current_instance(runtime, var)
-                sf = get_sfunc(inst)
-                info = info_provider(runtime, inst)
-                lock(alock)
-                sts = accumulate_stats(sf, new_stats[var.name], info)
-                new_stats[var.name] = sts
-                unlock(alock)
+        for var in config_vars_batch
+            inst = current_instance(runtime, var)
+            sf = get_sfunc(inst)
+            info = info_provider(runtime, inst)
+            lock(alock)
+            sts = accumulate_stats(sf, new_stats[get_name(var)], info)
+            new_stats[get_name(var)] = sts
+            unlock(alock)
 
-                #=
-                (parentpis, childlam, _) = info_provider(runtime, inst)
-                pars = get_parents(get_network(runtime), var)
-                parranges = [get_range(runtime, current_instance(runtime, p)) for p in pars]
-                parranges = Tuple(parranges)
-                range = get_range(runtime, inst)
-                # sts = operate(runtime, inst, expected_stats, parranges, parentpis, childlam)
-                sts = expected_stats(sf, range, parranges, Tuple(parentpis), childlam)
-                sts = normalize(sts) # We normalize here so we can apply normalization uniformly,
-                                    # whatever the sfunc of the variable. 
-                                    # This is a very important point in the design! 
-                                    # We don't have to normalize the individual sfuncs' expected_stats.
-                                    
-                    newstats[]
-                if var.name in keys(newstats)
-                    newstats[var.name] = accumulate_stats(sf, newstats[var.name], sts)
-                else
-                    newstats[var.name] = sts
-                end
-                unlock(alock)
-                =#
+            #=
+            (parentpis, childlam, _) = info_provider(runtime, inst)
+            pars = get_parents(get_network(runtime), var)
+            parranges = [get_range(runtime, current_instance(runtime, p)) for p in pars]
+            parranges = Tuple(parranges)
+            range = get_range(runtime, inst)
+            # sts = operate(runtime, inst, expected_stats, parranges, parentpis, childlam)
+            sts = expected_stats(sf, range, parranges, Tuple(parentpis), childlam)
+            sts = normalize(sts) # We normalize here so we can apply normalization uniformly,
+                                # whatever the sfunc of the variable. 
+                                # This is a very important point in the design! 
+                                # We don't have to normalize the individual sfuncs' expected_stats.
+                                
+                newstats[]
+            if var.name in keys(newstats)
+                newstats[var.name] = accumulate_stats(sf, newstats[var.name], sts)
+            else
+                newstats[var.name] = sts
             end
+            unlock(alock)
+            =#
         end
+        lock(alock)
+        config_vars = config_vars_batch
+        unlock(alock)
     end
     #= This doesn't make sense in the generalized algorithm
     # 3 blend in the old statistics
@@ -273,8 +272,8 @@ function em_iteration(network, batch, algorithm, initializer,
         println("Choosing maximizing parameters")
     end
     for var in config_vars
-        maximize_stats(var.model, new_stats[var.name])
-        new_config_specs[var.name] = get_config_spec(var.model)
+        maximize_stats(var.model, new_stats[get_name(var)])
+        new_config_specs[get_name(var)] = get_config_spec(var.model)
     end
     #=
     modelvars = Dict{Model, Array{Variable, 1}}()

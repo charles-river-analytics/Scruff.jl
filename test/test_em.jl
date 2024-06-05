@@ -242,7 +242,7 @@ using Random
             @testset "should converge right away if parameters don't change" begin
                 # if there's no evidence, the parameters shouldn't change
                 data = [Dict()]
-                @test em(fivecpdnet, data ; max_iterations = 2)[1] == (true, 2)
+                @test em(fivecpdnet, data ; max_iterations = 2, showprogress=false)[1] == (true, 2)
             end
 
             @testset "should converge in few iterations with fully observed data" begin

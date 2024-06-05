@@ -169,14 +169,14 @@ import Scruff.Algorithms: VE, ve, infer, probability, greedy_order, unconnected_
                 @test l.keys[1] == ids[dv3]
                 @test l.dims == (2,)
                 @test length(l.entries) == 2
-                @test isapprox(l.entries[i31], pa, atol = 0.0000001)
-                @test isapprox(l.entries[i32], pb, atol = 0.0000001)
+                @test isapprox(l.entries[i32], pa, atol = 0.0000001)
+                @test isapprox(l.entries[i31], pb, atol = 0.0000001)
                 @test length(u.keys) == 1
                 @test u.keys[1] == ids[dv3]
                 @test u.dims == (2,)
                 @test length(u.entries) == 2
-                @test isapprox(u.entries[i31], pa, atol = 0.0000001)
-                @test isapprox(u.entries[i32], pb, atol = 0.0000001)
+                @test isapprox(u.entries[i32], pa, atol = 0.0000001)
+                @test isapprox(u.entries[i31], pb, atol = 0.0000001)
             end
             
             @testset "With one query variable and no bounds" begin
@@ -191,8 +191,8 @@ import Scruff.Algorithms: VE, ve, infer, probability, greedy_order, unconnected_
                 @test l.keys[1] == ids[dv3]
                 @test l.dims == (2,)
                 @test length(l.entries) == 2
-                @test isapprox(l.entries[i31], pa, atol = 0.0000001)
-                @test isapprox(l.entries[i32], pb, atol = 0.0000001)
+                @test isapprox(l.entries[i32], pa, atol = 0.0000001)
+                @test isapprox(l.entries[i31], pb, atol = 0.0000001)
             end
 
             @testset "With disconnected variable" begin
@@ -223,15 +223,15 @@ import Scruff.Algorithms: VE, ve, infer, probability, greedy_order, unconnected_
                 k2 = l.keys[2]
                 @test k1 == ids[dv1] && k2 == ids[dv3] || k1 == ids[dv3] && k2 == ids[dv1]
                 if k1 == ids[dv1]
-                    @test isapprox(l.entries[(i11-1)*2 + i31], ppa, atol = 0.000001)
-                    @test isapprox(l.entries[(i11-1)*2 + i32], ppb, atol = 0.000001)
-                    @test isapprox(l.entries[(i12-1)*2 + i31], pqa, atol = 0.000001)
-                    @test isapprox(l.entries[(i12-1)*2 + i32], pqb, atol = 0.000001)
+                    @test isapprox(l.entries[(i12-1)*2 + i31], ppa, atol = 0.000001)
+                    @test isapprox(l.entries[(i12-1)*2 + i32], ppb, atol = 0.000001)
+                    @test isapprox(l.entries[(i11-1)*2 + i31], pqa, atol = 0.000001)
+                    @test isapprox(l.entries[(i11-1)*2 + i32], pqb, atol = 0.000001)
                 else
-                    @test isapprox(l.entries[(i31-1)*2 + i11], ppa, atol = 0.000001)
-                    @test isapprox(l.entries[(i31-1)*2 + i12], pqa, atol = 0.000001)
-                    @test isapprox(l.entries[(i32-1)*2 + i11], ppb, atol = 0.000001)
-                    @test isapprox(l.entries[(i32-1)*2 + i12], pqb, atol = 0.000001)
+                    @test isapprox(l.entries[(i32-1)*2 + i12], ppa, atol = 0.000001)
+                    @test isapprox(l.entries[(i32-1)*2 + i11], pqa, atol = 0.000001)
+                    @test isapprox(l.entries[(i31-1)*2 + i12], ppb, atol = 0.000001)
+                    @test isapprox(l.entries[(i31-1)*2 + i11], pqb, atol = 0.000001)
                 end
                 
             end
@@ -243,8 +243,8 @@ import Scruff.Algorithms: VE, ve, infer, probability, greedy_order, unconnected_
                 inst1 = current_instance(runtime, dv1)
                 post_evidence!(runtime, inst1, HardScore(1))
                 (l, ids) = ve(runtime, ord1, [dv3]; bounds = false)
-                p31 = 0.1 * (0.2 * 0.3 + 0.3 * 0.5 + 0.5 * 0.7)
-                p32 = 0.1 * (0.2 * 0.7 + 0.3 * 0.5 + 0.5 * 0.3)
+                p31 = 0.1 * (0.2 * 0.7 + 0.3 * 0.5 + 0.5 * 0.3)
+                p32 = 0.1 * (0.2 * 0.3 + 0.3 * 0.5 + 0.5 * 0.7)
                 @test isapprox(l.entries[i31], p31, atol = 0.000001)
                 @test isapprox(l.entries[i32], p32, atol = 0.000001)
             end
@@ -256,10 +256,10 @@ import Scruff.Algorithms: VE, ve, infer, probability, greedy_order, unconnected_
                 inst1 = current_instance(runtime, dv1)
                 post_evidence!(runtime, inst1, SoftScore([1,2], [3.0, 5.0]))
                 (l, ids) = ve(runtime, ord1, [dv3]; bounds = false)
-                p31 = 0.1 * 3.0 * (0.2 * 0.3 + 0.3 * 0.5 + 0.5 * 0.7) +
-                        0.9 * 5.0 * (0.2 * 0.4 + 0.3 * 0.6 + 0.5 * 0.8)
-                p32 = 0.1 * 3.0 * (0.2 * 0.7 + 0.3 * 0.5 + 0.5 * 0.3) +
+                p31 = 0.1 * 3.0 * (0.2 * 0.7 + 0.3 * 0.5 + 0.5 * 0.3) +
                         0.9 * 5.0 * (0.2 * 0.6 + 0.3 * 0.4 + 0.5 * 0.2)
+                p32 = 0.1 * 3.0 * (0.2 * 0.3 + 0.3 * 0.5 + 0.5 * 0.7) +
+                        0.9 * 5.0 * (0.2 * 0.4 + 0.3 * 0.6 + 0.5 * 0.8)
                 @test isapprox(l.entries[i31], p31, atol = 0.000001)
                 @test isapprox(l.entries[i32], p32, atol = 0.000001)
             end
