@@ -17,8 +17,8 @@ function answer(::Marginal, ::BP, runtime::Runtime, instance::VariableInstance, 
 end
 
 function infer(algorithm::BP, runtime::InstantRuntime,
-    evidence::Dict{Symbol, Score} = Dict{Symbol, Score}(), 
-    interventions::Dict{Symbol, Dist} = Dict{Symbol, Dist}(),
+    evidence::Dict{Symbol, <:Score} = Dict{Symbol, Score}(), 
+    interventions::Dict{Symbol, <:Dist} = Dict{Symbol, Dist}(),
     placeholder_beliefs = get_placeholder_beliefs(runtime))
     net = get_network(runtime)
     ensure_all!(runtime)

@@ -8,6 +8,7 @@ using ..Utils
 using ..Operators
 import ..Operators
 import ..Operators: VectorOption, Support, SupportQuality
+import ..Operators: InitialStats, AccumulateStats, ExpectedStats, MaximizeStats
 
 macro impl(expr)
     return esc(MultiInterface.impl(__module__, __source__, expr, Operators))

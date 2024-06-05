@@ -88,7 +88,8 @@ end
         Cat(range, ps)
     end
 end
-#=
+
+# STATS
 @impl begin
     struct ConstantAccumulateStats end
 
@@ -117,4 +118,4 @@ end
         nothing
     end
 end
-=#
+# STATS END

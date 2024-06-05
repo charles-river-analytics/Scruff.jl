@@ -1,6 +1,7 @@
 export
     Table
     
+    
 """
 mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, S <: SFunc{J,O}} <: Conditional{I, J, K, O, S}
 
@@ -10,13 +11,16 @@ is the count of incoming parent values.
 
 See also:  [`Conditional`](@ref), [`DiscreteCPT`](@ref), [`CLG`](@ref)
 """
-mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, S <: SFunc{J,O}} <: Conditional{I, J, K, O, S}
-    icombos :: Vector{I}
-    iranges :: NTuple{NumInputs, Array{Any, 1}}
-    isizes :: NTuple{NumInputs, Int}
-    imults :: NTuple{NumInputs, Int}
-    inversemaps :: NTuple{NumInputs, Dict{Any, Int}}
-    sfs :: Array{S, NumInputs}
+
+mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, Q, S <: SFunc{J,O}} <: Conditional{I, J, K, O, S}
+    params :: Dict{I, Q}
+    sf_maker :: Function
+    __icombos :: Vector{I}
+    __iranges :: NTuple{NumInputs, Array{Any, 1}}
+    __isizes :: NTuple{NumInputs, Int}
+    __imults :: NTuple{NumInputs, Int}
+    __inversemaps :: NTuple{NumInputs, Dict{Any, Int}}
+    __sfs :: Array{S, NumInputs}
     """
         function Table(J, O, NumInputs::Int, paramdict, sfmaker:Function) where {J, O, S <: SFunc{J,O}}
 
@@ -29,18 +33,21 @@ mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, S <: SFunc
     - `paramdict` see [`DiscreteCPT`](@ref) and [`CLG`](@ref) for examples
     - `sfmaker` a function from Q to S
     """
-    function Table(J, O, NumInputs::Int, paramdict::Dict{I,Q}, sfmaker::Function) where {I, Q}
+    function Table(J, O, NumInputs::Int, paramdict::Dict{I, Q}, sf_maker::Function) where {I, Q}
         K = extend_tuple_type(I,J)
         icombos = keys(paramdict)
         iranges :: Array{Array{Any,1}} = [unique(collect([combo[k] for combo in icombos])) for k in 1:NumInputs]
         isizes = tuple([length(irange) for irange in iranges]...)
+
         m = 1
         ims = zeros(Int, NumInputs)
         for k in NumInputs:-1:1
             ims[k] = m
             m *= isizes[k]
         end
+
         imults = tuple(ims...)
+
         # TODO: Fix ordering of Dict
         inversemaps = tuple([Dict([x => i for (i,x) in enumerate(irange)]) for irange in iranges]...)
         sortedcombos = [tuple(p...) for p in cartesian_product(iranges)]
@@ -48,10 +55,23 @@ mutable struct Table{NumInputs, I <: NTuple{NumInputs, Any}, J, K, O, S <: SFunc
         sfs = Array{S, NumInputs}(undef, isizes)
         for k in 1:length(sortedcombos)
             is = sortedcombos[k]
-            q = paramdict[is] 
-            sfs[k] = sfmaker(q)
+            q = paramdict[is]
+            sfs[k] = sf_maker(q)
         end
-        new{NumInputs, I, J, K, O, S}(sortedcombos, tuple(iranges...), isizes, imults, inversemaps, sfs)
+
+        new{NumInputs,I,J,K,O,Q,S}(paramdict, sf_maker, sortedcombos, tuple(iranges...), isizes, imults, inversemaps, sfs)
+    end
+end
+
+@impl begin
+    struct TableGetParams end
+    get_params(t :: Table) = t.params
+end
+
+@impl begin
+    struct TableSetParams! end
+    function set_params!(t :: Table{NumInputs,I,J,K,O}, new_params) where {NumInputs,I,J,K,O} 
+        Table(J, O, NumInputs, new_params, t.sf_maker)
     end
 end
 
@@ -73,22 +93,22 @@ function dict2tableparams(sf::Table{NumInputs,I,J,K,O,S}, p::Dict{I,Q}) where {N
 end
 =#
 
-function gensf(t::Table{N,I,J,K,O,S}, parvals::NTuple{N,Any}) where {N,I,J,K,O,S}
-    inds = tuple([t.inversemaps[k][parvals[k]] for k in 1:length(parvals)]...)
+function gensf(t::Table{N}, parvals::NTuple{N,Any}) where {N}
+    inds = tuple([t.__inversemaps[k][parvals[k]] for k in 1:length(parvals)]...)
     i = 1
     for k in 1:N
-        i += (inds[k] - 1) * t.imults[k]
+        i += (inds[k] - 1) * t.__imults[k]
     end
-    return t.sfs[i]# Change this to just index on the tuple of indices rather than do the calculation ourselves
+    return t.__sfs[i]# Change this to just index on the tuple of indices rather than do the calculation ourselves
 end
-#=
+
+# STATS
 function do_maximize_stats(t::Table{N,I,J,K,O,Q,S}, sfmaximizers) where {N,I,J,K,O,Q,S}
-    result = Array{Q, N}(undef, t.isizes)
-    # Since this is a table, the new parameters have to have an entry for each of the original parent values
-    for k in 1:length(t.params)
-        is = t.icombos[k]
-        result[k] = get(sfmaximizers, is, t.default)
-    end
-    return result
+    # result = Dict{I, Q}()
+    # for k in keys(t.params)
+    #     result[k] = sfmaximizers[k]
+    # end
+    # return result
+    sfmaximizers
 end
-=#
+# STATS END

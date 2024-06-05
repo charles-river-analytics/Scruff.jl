@@ -62,7 +62,11 @@ const FloatType = Float64
                         id, 
                         parids::Tuple)::Tuple{Vector{<:Scruff.Utils.Factor}, Vector{<:Scruff.Utils.Factor}} where {I,O,N}
 
-#= Statistics computation not finished
+@interface get_params(sf::SFunc)
+
+@interface set_params!(sf :: SFunc, params)
+
+# TODO vvvvvv Statistics computation not finished - not using anymore, defined for ConfigurableModel
 @interface initial_stats(sf::SFunc)
 
 # TODO create an abstract type Stats{I,O}
@@ -73,9 +77,11 @@ const FloatType = Float64
                           pis::NTuple{M,Dist},
                           child_lambda::Score{<:O}) where {I,O,N,M}
 
-@interface accumulate_stats(sf::SFunc, existing_stats, new_stats)
-@interface maximize_stats(sf::SFunc, stats)
-=#
+@interface accumulate_stats(sf::SFunc, existing_stats, new_stats) 
+@interface maximize_stats(sf::SFunc, stats) 
+
+@interface configure(sf::SFunc, config_spec) :: SFunc
+# ^^^^ Not finished
 
 @interface compute_bel(sf::SFunc{I,O},
                       range::VectorOption{<:O}, 

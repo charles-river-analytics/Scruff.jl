@@ -49,10 +49,10 @@ output value.
 - `O`: the output type of the `Cat`
 """
 mutable struct Cat{O, T<:Real} <: Dist{O}
-    range :: Vector{O}
-    inversemap :: Dict{O, Int}
-    params :: Vector{T}
     original_range :: Vector{O}
+    params :: Vector{T}
+    __inversemap :: Dict{O, Int}
+    __compiled_range :: Vector{O}
     """
         Cat(r::Vector{O}, ps::Vector{<:Real}) where O
 
@@ -63,17 +63,17 @@ mutable struct Cat{O, T<:Real} <: Dist{O}
     - `ps::Vector{<:Real}`: the set of probabilities for each value in `r` 
       (will be normalized on call to `sample`)
     """
-    function Cat(range::Vector{O}, params::Vector{T}) where {O, T<:Real}
-        @assert length(range) == length(params)
+    function Cat(original_range::Vector{O}, params::Vector{T}) where {O, T<:Real}
+        @assert length(original_range) == length(params)
         # Handle repeated values correctly
         d = Dict{O, Float64}()
-        for (x,p) in zip(range, params)
+        for (x, p) in zip(original_range, params)
             d[x] = get(d, x, 0) + p
         end
         r = collect(keys(d))
         ps = [d[x] for x in r]
         inversemap = Dict([x => i for (i,x) in enumerate(r)]) 
-        return new{O, T}(r, inversemap, ps, range)
+        return new{O, T}(original_range, ps, inversemap, r)
     end
 
     function Cat(d::Dict{O, <:Real}) where O
@@ -97,12 +97,32 @@ mutable struct Cat{O, T<:Real} <: Dist{O}
 end
 
 @impl begin
+    struct CatGetParams end
+    get_params(c :: Cat) = c.params
+end
+
+@impl begin
+    struct CatSetParams! end
+    function set_params!(c :: Cat, p)
+        c.params = p
+        c
+    end
+end
+
+@impl begin
+    struct CatConfigure end
+    function configure(sf::Cat{O}, rps::Vector{<:Pair{O, <:Real}}) where O
+        Cat(rps)
+    end
+end
+
+@impl begin
     struct CatSupport end
     function support(sf::Cat{O}, 
                      parranges::NTuple{N,Vector}, 
                      size::Integer, 
                      curr::Vector{<:O}) where {O,N}
-        sf.range
+        sf.original_range
     end
 end
 
@@ -117,14 +137,14 @@ end
     struct CatSample end
     function sample(sf::Cat{O}, i::Tuple{})::O where {O}
         i = rand(Distributions.Categorical(sf.params))
-        return sf.range[i]
+        return sf.__compiled_range[i]
     end
 end
 
 @impl begin
     struct CatCpdf end
     function cpdf(sf::Cat{O}, i::Tuple{}, o::O) where {O}
-        ind = get(sf.inversemap, o, 0)
+        ind = get(sf.__inversemap, o, 0)
         if ind == 0
             return 0.0
         else
@@ -136,11 +156,11 @@ end
 @impl begin
     struct CatBoundedProbs end
     function bounded_probs(sf::Cat{O}, 
-                        range::Vector{O}, 
-                        ::NTuple{N,Vector})::Tuple{Vector{<:AbstractFloat}, 
-                        Vector{<:AbstractFloat}} where {O,N}
+                           range::Vector{O}, 
+                           ::NTuple{N,Vector})::Tuple{Vector{<:AbstractFloat}, 
+                                                      Vector{<:AbstractFloat}} where {O,N}
 
-        ps = [x in keys(sf.inversemap) ? sf.params[sf.inversemap[x]] : 0.0 for x in range]
+        ps = [x in keys(sf.__inversemap) ? sf.params[sf.__inversemap[x]] : 0.0 for x in range]
         (ps, ps)
     end
 end
@@ -158,19 +178,24 @@ end
     end
 end
 
-#=
+# STATS
 @impl begin
     struct CatInitialStats end
 
-    function initial_stats(sf::Cat)
-        zeros(Float64, length(sf.original_range))
+    function initial_stats(sf::Cat{T}) where T
+        # d = Dict{T, Float64}()
+        # for k in sf.range
+        #     d[k] = 0.0
+        # end
+        # d
+       zeros(Float64, length(sf.__compiled_range))
     end
 end
 
 @impl begin
     struct CatAccumulateStats end
 
-    function accumulate_stats(sf::Cat, existing_stats, new_stats)
+    function accumulate_stats(sf::Cat{T}, existing_stats, new_stats) where T
         existing_stats .+ new_stats
     end
 end
@@ -183,14 +208,15 @@ end
             ::NTuple{N,Vector},
             ::NTuple{M,Dist},
             lambda::Score{<:O}) where {O,N,M}
-        orig = sf.original_range
+        orig = sf.__compiled_range
         ps = zeros(Float64, length(orig))
-        for (i,x) in enumerate(orig)
-            if x in sf.range
-                ps[i] = sf.params[sf.inversemap[x]]
+
+        for (i,x) in enumerate(range)
+            if x in orig
+                ps[i] = sf.params[sf.__inversemap[x]]
             end
         end
-        ls = [get_score(lambda, r) for r in orig]
+        ls = [get_score(lambda, r) for r in range]
         return ps .* ls
     end
 end
@@ -202,14 +228,15 @@ end
         normalize(stats) 
     end
 end
-=#
+# END STATS
+
 
 @impl begin
     struct CatFExpectation end
     function f_expectation(sf::Cat, ::Tuple{}, fn::Function)
         sum = 0.0
         total = 0.0
-        for (i,x) in enumerate(sf.range)
+        for (i, x) in enumerate(sf.__compiled_range)
             sum += fn(x) * sf.params[i]
             total += sf.params[i]
         end

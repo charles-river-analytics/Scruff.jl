@@ -64,7 +64,7 @@ end
         c = Cat([:a,:b,:c], [0.2, 0.3, 0.5])
         c2 = Cat([:a => 0.2, :b => 0.3, :c => 0.5])
         c3 = Cat([1,1,2], [0.1, 0.3, 0.6]) # must handle duplicates in range correctly
-        @test c2.range == [:a,:b,:c]
+        @test c2.original_range == [:a,:b,:c]
         @test c2.params == [0.2, 0.3, 0.5]
         test_support(c, (), [:a,:b,:c], :CompleteSupport)
         test_support(c3, (), [1,2], :CompleteSupport)
@@ -313,7 +313,7 @@ end
         picat2 = Cat([1,2,3], pis[2])
         picats = (picat1, picat2)
         # Cat range is in arbitrary order so we need to get it directly from the Cat
-        parranges = (picat1.range, picat2.range) 
+        parranges = (picat1.__compiled_range, picat2.__compiled_range) 
         ks = collect(keys(d))
         ks1 = unique(first.(ks))
         ks2 = unique(last.(ks))
