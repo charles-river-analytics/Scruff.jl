@@ -2,6 +2,7 @@ export
     VE,
     ve
 
+import CliqueTrees
 import ..Operators.make_factors
 import ..SFuncs: Invertible, Serial
 using Folds
@@ -413,6 +414,45 @@ function greedy_order(g :: Graph, to_leave :: Array{Int})
         deleteat!(candidates, findfirst(n -> n == best, candidates))
     end
     return result
+end
+
+function speedy_greedy_order(g :: Graph, to_leave :: Array{Int})
+    n = length(g.nodes)
+    m = length(to_leave)
+    index = sizehint!(Dict{Int, Int}(), n)
+    graph = CliqueTrees.Graph{Int}(n)
+    clique = Vector{Int}(undef, m)
+
+    # construct index
+    for (i, v) in enumerate(g.nodes)
+        index[v] = i
+    end
+    
+    # construct graph
+    for v in g.nodes
+        for w in g.edges[v]
+            if index[v] < index[w]
+                CliqueTrees.add_edge!(graph, index[v], index[w])
+            end
+        end
+    end
+    
+    # form a clique from the variables in `to_leave`
+    for i in 1:m
+        v = to_leave[i]
+        
+        for ii in i + 1:m
+            vv = to_leave[ii]
+            CliqueTrees.add_edge!(graph, index[v], index[vv])
+        end
+        
+        clique[i] = index[v]
+    end
+    
+    # compute ordering
+    alg = CliqueTrees.CompositeRotations(clique, CliqueTrees.MF())
+    perm, _ = CliqueTrees.permutation(graph; alg)
+    return g.nodes[perm[begin:end - m]]
 end
 
 function greedy_order(g :: Graph)
