@@ -403,20 +403,6 @@ function cost(g :: Graph, n :: Int)
 end
 
 function greedy_order(g :: Graph, to_leave :: Array{Int})
-    candidates = filter(n -> !(n in to_leave), g.nodes)
-    result = []
-    h = copy_graph(g)
-    while !isempty(candidates)
-        costs = map(c -> cost(h, c), candidates)
-        best = candidates[argmin(costs)]
-        push!(result, best)
-        eliminate(h, best)
-        deleteat!(candidates, findfirst(n -> n == best, candidates))
-    end
-    return result
-end
-
-function speedy_greedy_order(g :: Graph, to_leave :: Array{Int})
     n = length(g.nodes)
     m = length(to_leave)
     index = sizehint!(Dict{Int, Int}(), n)
