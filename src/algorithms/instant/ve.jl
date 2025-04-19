@@ -402,10 +402,14 @@ function cost(g :: Graph, n :: Int)
     return length(unconnected_neighbors(g, n))
 end
 
-function greedy_order(g :: Graph, to_leave :: Array{Int})
+# options for alg:
+#  - MF()             greedy minimum fill
+#  - SafeRules(BT())  exact treewidth (requires TreeWidthSolver.jl)
+function elimination_order(g :: Graph, to_leave :: Vector{Int}, alg :: CliqueTrees.EliminationAlgorithm)
     n = length(g.nodes)
     m = length(to_leave)
     index = sizehint!(Dict{Int, Int}(), n)
+    weights = Vector{Float64}(undef, n)
     graph = CliqueTrees.Graph{Int}(n)
     clique = Vector{Int}(undef, m)
 
@@ -416,6 +420,8 @@ function greedy_order(g :: Graph, to_leave :: Array{Int})
     
     # construct graph
     for v in g.nodes
+        weights[index[v]] = log2(g.sizes[v])
+
         for w in g.edges[v]
             if index[v] < index[w]
                 CliqueTrees.add_edge!(graph, index[v], index[w])
@@ -436,12 +442,13 @@ function greedy_order(g :: Graph, to_leave :: Array{Int})
     end
     
     # compute ordering
-    alg = CliqueTrees.CompositeRotations(clique, CliqueTrees.MF())
-    perm, _ = CliqueTrees.permutation(graph; alg)
+    perm, _ = CliqueTrees.permutation(weights, graph;
+        alg=CliqueTrees.CompositeRotations(clique, alg))
+
     return g.nodes[perm[begin:end - m]]
 end
 
-function greedy_order(g :: Graph)
-    a :: Array{Int, 1} = []
-    return greedy_order(g, a)
+function greedy_order(g::Graph, to_leave :: Vector{Int} = Int[])
+    alg = CliqueTrees.MF()
+    return elimination_order(g, to_leave, alg)
 end
