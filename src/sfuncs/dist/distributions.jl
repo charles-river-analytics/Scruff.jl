@@ -8,6 +8,9 @@ struct DistributionsSF{D <: Distributions.Distribution, O} <: Dist{O}
         O = eltype(D)
         return new{D, O}(dist)
     end
+    function DistributionsSF(dist::D, O) where { D <: Distributions.Distribution}
+        return new{D, O}(dist)
+    end
     function DistributionsSF{D}(params...) where {D <: Distributions.Distribution}
         d = D(params...)
         return DistributionsSF(d)

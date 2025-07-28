@@ -14,7 +14,7 @@ export LinearGaussian
 See also: [`Conditional`](@ref), [`Normal`](@ref)
 """
 mutable struct LinearGaussian{I <: Tuple{Vararg{Float64}}} <: Conditional{I, Tuple{}, I, Float64, Normal{Float64}}
-    sf :: Normal{Float64}
+    # sf :: Normal{Float64}
     params :: Tuple{Tuple{Vararg{Float64}}, Float64, Float64}
     """
         function LinearGaussian(weights :: Tuple{Vararg{Float64}}, bias :: Float64, sd :: Float64)
@@ -28,9 +28,10 @@ mutable struct LinearGaussian{I <: Tuple{Vararg{Float64}}} <: Conditional{I, Tup
     """
     function LinearGaussian(weights :: Tuple{Vararg{Float64}}, bias :: Float64, sd :: Float64)
         params = (weights, bias, sd)
-        sf = Normal(0.0, sd)
+        # sf = Normal(0.0, sd)
         N = length(weights)
-        new{NTuple{N, Float64}}(sf, params)
+        new{NTuple{N, Float64}}(params)
+        # new{NTuple{N, Float64}}(sf, params)
     end
 end
 #=
