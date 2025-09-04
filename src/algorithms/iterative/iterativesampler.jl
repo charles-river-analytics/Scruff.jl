@@ -13,7 +13,7 @@ end
 function prepare(alg::IterativeSampler, runtime::InstantRuntime,
     evidence::Dict{Symbol, <:Score} = Dict{Symbol, Score}(), 
     interventions::Dict{Symbol, <:Dist} = Dict{Symbol, Dist}(),
-    placeholder_beliefs = get_placeholder_beliefs(runtime))
+    placeholder_beliefs = get_placeholder_beliefs(runtime, get_placeholders(get_network(runtime))))
     net = get_network(runtime)
     for (n,e) in evidence
         v = get_node(net, n)

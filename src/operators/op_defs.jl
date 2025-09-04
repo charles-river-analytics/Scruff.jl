@@ -45,11 +45,20 @@ const FloatType = Float64
 @interface make_marginals(sf::SFunc{I, <:Tuple})::NTuple{<:Any, <:SFunc{I}} where {I}
 @interface join_marginals(sfs::NTuple{<:Any, <:SFunc{I}})::SFunc{I, <:Tuple} where {I}
 
+# In support, the size is a guideline but does not have to be enforced.
 @interface support(sf::SFunc{I,O}, 
                    parranges::NTuple{N,Vector}, 
                    size::Integer, 
                    curr::Vector{<:O}) where {I,O,N}
 
+# In limited_support, the size is a guarnteed hard limit.
+@interface limited_support(
+    sf::SFunc{I,<:O}, 
+    parranges::NTuple{N,Vector}, 
+    size::Integer)::Vector{<:O} where {N,I,O}
+
+# For ordinary support, the support_quality indicates whether it is Complete (i.e, exhaustive), Incremental, meaning that each subsequent call provide more of the support,
+# Or BestEffort, which has no guarantees.
 @interface support_quality(sf::SFunc, parranges)
 
 @interface bounded_probs(sf::SFunc{I,O}, 
@@ -114,3 +123,4 @@ const FloatType = Float64
                        parranges::NTuple{N,Vector},
                        incoming_pis::Tuple,
                        parent_idx::Integer)::Score where {N,I,O}
+

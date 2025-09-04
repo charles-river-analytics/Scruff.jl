@@ -33,6 +33,7 @@ export
     has_state,
     has_value,
     previous_instance,
+    remove_instance!,
     rng,
     clear_state!,
     concat!,
@@ -299,30 +300,40 @@ there is only a single instance for each variable.
 """
 function instantiate!(runtime::InstantRuntime,variable::Variable,time = 0) 
         # time argument is provided for uniformity but ignored
-    return get!(runtime.instances, variable, 
+    result = get!(runtime.instances, variable, 
         VariableInstance(variable, make_initial(variable.model, time), time))
+    return result
 end
 
 function instantiate!(runtime::InstantRuntime,placeholder::Placeholder,time = 0)
-    return get!(runtime.instances, placeholder, PlaceholderInstance(placeholder, time))
+    result = get!(runtime.instances, placeholder, PlaceholderInstance(placeholder, time))
+    result
 end
 
 function instantiate!(runtime::DynamicRuntime{T}, node::Node,time::T = current_time(runtime))::Instance where {T}
     if haskey(runtime.instances, node)
         curr = (runtime.instances[node])
-        @assert !in(time, keys(curr)) "variable $(variable.name) at time $(time) is already instantiated"
-        parents = get_transition_parents(runtime.network, node)
-        parenttimes = Vector{T}()
-        for p in parents 
-            time_offset = has_timeoffset(runtime.network, node, p)
-            parinst = latest_instance_before(runtime, p, time, !time_offset)
-            if isnothing(parinst)
-                error("In instantiate! for ", variable.name, ": parent ", p.name, " not instantiated at time ", time)
-            end
-            push!(parenttimes, get_time(parinst))
+        if in(time, keys(curr))
+            return curr[time]
         end
-        parenttimes = tuple(parenttimes...)
+        # @assert !in(time, keys(curr)) "variable $(node.name) at time $(time) is already instantiated"
         if isa(node, Variable)
+            parents = get_transition_parents(runtime.network, node)
+            parenttimes = Vector{T}()
+            for p in parents 
+                time_offset = has_timeoffset(runtime.network, node, p)
+                parinst = latest_instance_before(runtime, p, time, !time_offset)
+                if isnothing(parinst)
+                    # It is possible the parent, which was a Variable, has been replaced by a Placeholder, so we check for that here
+                    placeholder = Placeholder{output_type(p)}(get_name(p))
+                    parinst = latest_instance_before(runtime, placeholder, time, !time_offset)
+                    if isnothing(parinst)
+                        error("In instantiate! for ", node.name, ": parent ", p.name, " not instantiated at time ", time)
+                    end
+                end
+                push!(parenttimes, get_time(parinst))
+            end
+            parenttimes = tuple(parenttimes...)
             sf = make_transition(node.model, parenttimes, time)
             inst = VariableInstance(node, sf, time)
         else
@@ -431,6 +442,17 @@ function get_all_instances(runtime::InstantRuntime, variable::Variable)
 end
 
 """
+    get_all_instances(runtime::Runtime)
+
+Returns the complete list of instances in the runtime. Not guaranteed to be in order.
+"""
+
+function get_all_instances(runtime::DynamicRuntime)
+    vars = get_variables(get_network(runtime))
+    vcat([get_all_instances(runtime, var) for var in vars])
+end
+
+"""
     function get_instance(runtime::DynamicRuntime{T}, node::Node, t::T)::Instance
 
 Returns instance for the given variable at time `T`; throws an error if no
@@ -486,6 +508,21 @@ end
 #=
     Setting and getting values associated with instances
 =#
+
+"""
+    remove_isntance!(runtime::Runtime, node::Node, time = current_time(runtime))
+
+Removes the instance for the given node at the given time from the runtime.
+Does nothing if nb such instance exists.
+"""
+
+function remove_instance!(runtime::Runtime, node::Node, time = current_time(runtime))
+    if !haskey(runtime.instances, node)
+        return
+    end
+    instances = runtime.instances[node]
+    delete!(instances, time)
+end
 
 """
     set_value!(runtime::Runtime, instance::Instance, key::Symbol, value)
@@ -593,16 +630,28 @@ end
 
 has_belief(runtime::Runtime, inst::Instance) = has_value(runtime, inst, BELIEF)
 
-function get_placeholder_beliefs(runtime::Runtime)::Dict{Symbol,Dist}
+# I THINK THE FIX IS FOR PLACEHOLDERS TO BE INSTANCES, RATHER THAN USING CURRENT_INSTANCE. WE MUST MAKE SURE THAT STAYS CORRECT FOR OTHER USES.
+function get_placeholder_beliefs(runtime::Runtime, placeholder_instances)::Dict{Symbol,Dist}
     result = Dict{Symbol,Dist}()
-    for ph in get_placeholders(get_network(runtime))
-        i = current_instance(runtime, ph)
-        if has_belief(runtime, i)
-            result[ph.name] = get_belief(runtime, i)
+    # for ph in get_placeholders(get_network(runtime))
+    for phi in placeholder_instances
+        if has_belief(runtime, phi)
+            result[get_name(phi)] = get_belief(runtime, phi)
         end
     end
     return result
 end
+# function get_placeholder_beliefs(runtime::Runtime, placeholders)::Dict{Symbol,Dist}
+#     result = Dict{Symbol,Dist}()
+#     # for ph in get_placeholders(get_network(runtime))
+#     for ph in placeholders
+#         i = current_instance(runtime, ph)
+#         if has_belief(runtime, i)
+#             result[ph.name] = get_belief(runtime, i)
+#         end
+#     end
+#     return result
+# end
 """
     EVIDENCE
 

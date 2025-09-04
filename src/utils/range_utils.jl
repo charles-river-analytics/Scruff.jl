@@ -29,9 +29,10 @@ function parent_ranges(runtime::Runtime, var::Variable{I,J,O}, depth = typemax(I
     result = []
     for p in pars
         pinst = current_instance(runtime, p)
-        push!(result, get_range(runtime, pinst, depth))
+        parrange = get_range(runtime, pinst, depth)
+        push!(result, parrange) 
     end
-    T = isempty(result) ? Vector{O} : typejoin([typeof(x) for x in result]...)
+    T = isempty(result) ? Vector{O} : typejoin([typeof(x) for x in result]...) 
     return convert(Vector{T}, result)
 end
 
@@ -160,7 +161,7 @@ function set_ranges!(runtime::InstantRuntime,
     evidence::Dict{Symbol,Score} = Dict{Symbol, Score}(),
     size :: Int = 10, depth :: Int = 1, 
     order = topsort(get_initial_graph(get_network(runtime))),
-    placeholder_beliefs = get_placeholder_beliefs(runtime))
+    placeholder_beliefs = get_placeholder_beliefs(runtime, get_placeholders(get_network(runtime))))
     if depth < 1 
         return false 
     end

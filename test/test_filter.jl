@@ -6,7 +6,9 @@ using Scruff.RTUtils
 using Scruff.Models
 using Scruff.SFuncs
 using Scruff.Algorithms
+using Scruff.Operators
 import Scruff: make_initial, make_transition
+
 
 @testset "Filtering" begin
     
@@ -162,8 +164,7 @@ import Scruff: make_initial, make_transition
         end
         
     end 
-    
-       
+         
     @testset "Particle filter" begin
         
         @testset "Synchronous" begin
@@ -382,6 +383,7 @@ import Scruff: make_initial, make_transition
         end
     
     end
+
     
     @testset "BP filter" begin
         
@@ -404,6 +406,7 @@ import Scruff: make_initial, make_transition
             end
 
             @testset "Filter step" begin
+                
                 @testset "Without evidence" begin
                     p101 = 0.1
                     p102 = 0.9
@@ -452,7 +455,9 @@ import Scruff: make_initial, make_transition
                     @test isapprox(probability(pf, runtime, v2, :a), 0.0; atol = 0.05)
                     @test isapprox(probability(pf, runtime, v2, :b), 1.0; atol = 0.05)
                 end
+                
             end
+            
         end
 
         @testset "Asynchronous BP" begin
@@ -818,8 +823,178 @@ import Scruff: make_initial, make_transition
             end
             
         end
-    
     end
-    
-    
+       
+    @testset "Range limited filter" begin
+        
+        @testset "Runs discrete without complaining" begin
+            cat1 = Cat([1,2,3,4], [0.1, 0.2, 0.3, 0.4])
+            cat2 = Cat([6,7,8], [0.2, 0.3, 0.5])
+            chain1 = Chain(Tuple{Int}, Int, x -> Constant(x[1] + 1))
+            chain2 = Chain(Tuple{Int}, Int, x -> Constant(x[1] * 2))
+            v1 = HomogeneousModel(cat1, chain1)(:v1)
+            v2 = HomogeneousModel(cat2, chain2)(:v2)
+            net = DynamicNetwork([v1, v2], VariableGraph(), VariableGraph(v1 => [v1], v2 => [v2]))
+
+            @testset "with no limits" begin
+                limits = Dict{Symbol, Integer}()
+                filter = RangeLimited(SyncBP(), limits)
+                variables = [v1, v2]
+                runtime = Runtime(net)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, variables, 1, Dict{Symbol, Score}()) 
+                filter_step(filter, runtime, variables, 2, Dict{Symbol, Score}()) 
+                @test true
+            end
+
+            @testset "with limits greater than range" begin
+                limits = Dict{Symbol, Integer}(:v1 => 6, :v2 => 8)
+                filter = RangeLimited(SyncBP(), limits)
+                variables = [v1, v2]
+                runtime = Runtime(net)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, variables, 1, Dict{Symbol, Score}()) 
+                filter_step(filter, runtime, variables, 2, Dict{Symbol, Score}()) 
+                @test true
+            end
+
+            @testset "with limits less than range" begin
+                limits = Dict{Symbol, Integer}(:v1 => 3, :v2 => 2)
+                filter = RangeLimited(SyncBP(), limits)
+                variables = [v1, v2]
+                runtime = Runtime(net)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, variables, 1, Dict{Symbol, Score}()) 
+                filter_step(filter, runtime, variables, 2, Dict{Symbol, Score}()) 
+                @test true
+            end
+
+            @testset "with partial limits" begin
+                limits = Dict{Symbol, Integer}(:v1 => 3)
+                filter = RangeLimited(SyncBP(), limits)
+                variables = [v1, v2]
+                runtime = Runtime(net)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, variables, 1, Dict{Symbol, Score}()) 
+                filter_step(filter, runtime, variables, 2, Dict{Symbol, Score}()) 
+                @test true
+            end
+        end 
+
+        @testset "Runs continuous without complaining" begin
+            norm = Normal(0.0, 1.0)
+            lg = LinearGaussian((1.0,), 2.0, 1.0)
+            v = HomogeneousModel(norm, lg)(:v)
+            net = DynamicNetwork([v], VariableGraph(), VariableGraph(v => [v]))
+
+            @testset "with no limits" begin
+                limits = Dict{Symbol, Integer}()
+                filter = RangeLimited(SyncBP(), limits)
+                variables = [v]
+                runtime = Runtime(net)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, variables, 1, Dict{Symbol, Score}()) 
+                filter_step(filter, runtime, variables, 2, Dict{Symbol, Score}()) 
+                @test true
+            end
+
+            @testset "with limits" begin
+                limits = Dict{Symbol, Integer}(:v => 3)
+                filter = RangeLimited(SyncBP(), limits)
+                variables = [v]
+                runtime = Runtime(net)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, variables, 1, Dict{Symbol, Score}()) 
+                filter_step(filter, runtime, variables, 2, Dict{Symbol, Score}()) 
+                @test true
+            end
+
+        end 
+        
+        @testset "Does not limit the range of variables when there are no limits" begin
+            norm = Normal(0.0, 1.0)
+            lg = LinearGaussian((1.0,), 2.0, 1.0)
+            v = HomogeneousModel(norm, lg)(:v)
+            net = DynamicNetwork([v], VariableGraph(), VariableGraph(v => [v]))
+
+            limits = Dict{Symbol, Integer}()
+            filter = RangeLimited(SyncBP(), limits)
+            variables = [v]
+            runtime = Runtime(net)
+            init_filter(filter, runtime)
+            filter_step(filter, runtime, variables, 1, Dict{Symbol, Score}()) 
+            filter_step(filter, runtime, variables, 2, Dict{Symbol, Score}()) 
+
+            instance = current_instance(runtime, v)
+            bel = get_belief(runtime, instance)
+            @test length(support(bel, (), 1000, Float64[])) > 3
+        end
+
+        @testset "Appropriately limits the range of continuous variables when there are limits" begin
+            norm = Normal(0.0, 1.0)
+            lg = LinearGaussian((1.0,), 2.0, 1.0)
+            v = HomogeneousModel(norm, lg)(:v)
+            net = DynamicNetwork([v], VariableGraph(), VariableGraph(v => [v]))
+
+            limits = Dict{Symbol, Integer}(:v => 3)
+            filter = RangeLimited(SyncBP(), limits)
+            variables = [v]
+            runtime = Runtime(net)
+            init_filter(filter, runtime)
+            filter_step(filter, runtime, variables, 1, Dict{Symbol, Score}()) 
+            filter_step(filter, runtime, variables, 2, Dict{Symbol, Score}()) 
+
+            instance = current_instance(runtime, v)
+            bel = get_belief(runtime, instance)
+            @test length(support(bel, (), 1000, Float64[])) <= 3
+        end
+
+        @testset "Appropriately limits the range of discrete variables when there are limits" begin
+            cat1 = Cat([1,2,3,4], [0.1, 0.2, 0.3, 0.4])
+            cat2 = Cat([6,7,8], [0.2, 0.3, 0.5])
+            chain1 = Chain(Tuple{Int}, Int, x -> Constant(x[1] + 1))
+            chain2 = Chain(Tuple{Int}, Int, x -> Constant(x[1] * 2))
+            v1 = HomogeneousModel(cat1, chain1)(:v1)
+            v2 = HomogeneousModel(cat2, chain2)(:v2)
+            net = DynamicNetwork([v1, v2], VariableGraph(), VariableGraph(v1 => [v1], v2 => [v2]))
+
+            limits = Dict{Symbol, Integer}(:v1 => 3, :v2 => 2)
+            filter = RangeLimited(SyncBP(), limits)
+            variables = [v1, v2]
+            runtime = Runtime(net)
+            init_filter(filter, runtime)
+            filter_step(filter, runtime, variables, 1, Dict{Symbol, Score}()) 
+            filter_step(filter, runtime, variables, 2, Dict{Symbol, Score}()) 
+
+            instance1 = current_instance(runtime, v1)
+            bel1 = get_belief(runtime, instance1)
+            @test length(support(bel1, (), 1000, Int[])) <= 3
+            instance2 = current_instance(runtime, v2)
+            bel2 = get_belief(runtime, instance2)
+            @test length(support(bel2, (), 1000, Int[])) <= 2
+        end
+
+        @testset "Produces correct beliefs with no limits" begin
+
+        end
+
+        @testset "Produces approximately correct beliefs with limits" begin
+
+        end
+
+        @testset "Works with PF" begin
+            
+        end
+
+        @testset "Works with Async" begin
+
+        end
+
+        @testset "Run for many timesteps with continuous model without running out of mempory" begin
+            
+        end
+
+    end
+  
+
 end

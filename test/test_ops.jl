@@ -7,7 +7,7 @@ using Scruff.Operators
 using Scruff.MultiInterface: @impl
 
 import Scruff.Operators: sample, forward, cpdf, logcpdf
-import Scruff.SFuncs: Constant
+import Scruff.SFuncs: Constant, Normal, Cat, Chain
 
 # Test default implementation of operators
 
@@ -118,5 +118,53 @@ end
     #     @test_throws ErrorException cpdf(SF7(), (2,), 1)
     #     @test_throws ErrorException logcpdf(SF7(), (2,), 1)
     # end
+end
+
+@testset "Implementation of limited_support" begin
+
+    @testset "Should produce a range of at most the target size" begin
+        n1 = 100
+        n2 = 20
+        vs = [i for i in 1:n1]
+        ps = [1.0 / n1 for i in 1:n1]
+        c = Cat(vs, ps)
+        lr = limited_support(c, (), n2)
+        @test length(lr) <= n2
+    end
+
+    @testset "Should produce a random sample of the initial range" begin
+        n1 = 1000
+        n2 = 500
+        vs = [i for i in 1:n1]
+        ps = [1.0 / n1 for i in 1:n1]
+        c = Cat(vs, ps)
+        lr = limited_support(c, (), n2)
+        tot = 0
+        for i in 1:n2 
+            if lr[i] < n1/2 
+                tot += 1
+            end
+        end
+        @test isapprox(float(tot) / float(n2), 0.5; atol = 0.03)
+    end
+
+    @testset "Should keep the original support if already below target size" begin
+        n1 = 10
+        n2 = 20
+        vs = [i for i in 1:n1]
+        ps = [1.0 / n1 for i in 1:n1]
+        c = Cat(vs, ps)
+        lr = limited_support(c, (), n2)
+        @test sort(lr) == vs
+    end
+
+    @testset "Works with chain and a continuous distribution" begin
+        n1 = 100
+        n2 = 50
+        ch = Chain(Tuple{Int}, Float64, x-> Normal(float(x[1]), 1.0))
+        parranges :: Tuple{Vector{Int}} = ([i for i in 1:100],)
+        lr = limited_support(ch, parranges, n2)
+        @test length(lr) <= n2
+    end
 end
 end

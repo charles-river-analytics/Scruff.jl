@@ -66,54 +66,66 @@ for dynamic reasoning.
 """
 function instant_runtime_from_instances(dynrun::DynamicRuntime, dyninsts::Vector{Instance})
     dynnet = get_network(dynrun)
-    forward_index = Dict{Instance, Node}()
-    back_index = Dict{Node, Instance}()
+    forward_index = Dict{Symbol, Node}()
+    back_index = Dict{Symbol, Instance}()
+    # placeholders = map(i -> get_node(i), filter(i -> i isa PlaceholderInstance, dyninsts))
+    placeholders = filter(i -> i isa PlaceholderInstance, dyninsts)
+    placeholder_beliefs = get_placeholder_beliefs(dynrun, placeholders)
     placeholders = Placeholder[]
     variables = Variable[]
-    nodes = Node[]
+    instnodes = Node[]
 
     for dyninst in dyninsts
-        node = instant_node(dyninst)
-        if get_node(dyninst) isa Variable
-            push!(variables, node)
+        dynnode = get_node(dyninst)
+        instnode = instant_node(dyninst)
+        if dynnode isa Variable
+            push!(variables, instnode)
         else
-            push!(placeholders, node)
+            push!(placeholders, instnode)
         end
-        forward_index[dyninst] = node
-        back_index[node] = dyninst
-        push!(nodes, node)
+        forward_index[instant_name(get_name(dyninst), get_time(dyninst))] = instnode 
+        back_index[get_name(instnode)] = dyninst
+        push!(instnodes, instnode)
     end
 
     instgraph = VariableGraph()
-    for node in nodes
-        nodepars = Node[]
-        dyninst = back_index[node]
-        insttime = get_time(dyninst)
+
+    for instnode in instnodes
+        instnodepars = Node[]
+        dyninst = back_index[get_name(instnode)]
+        dyninsttime = get_time(dyninst)
         dynnode = get_node(dyninst)
         dynpars = get_transition_parents(dynnet, dynnode)
         for dynpar in dynpars
             # Find the most recent parent instance equal or before this variable's instance
             time_offset = has_timeoffset(dynnet, dynnode, dynpar)
-            parinst = latest_instance_before(dynrun, dynpar, insttime, !time_offset)
-            if isnothing(parinst)
-                error("Variable does not have parent in instances")
-            elseif !(parinst in dyninsts)
-                # should be a placeholder
-                ph = Placeholder{output_type(dynpar)}(get_name(dynpar))
-                parinst = PlaceholderInstance(ph, get_time(parinst))
+            dynparinst = latest_instance_before(dynrun, dynpar, dyninsttime, !time_offset)
+            if isnothing(dynparinst)
+                placeholder = Placeholder{output_type(dynpar)}(get_name(dynpar))
+                dynparinst = latest_instance_before(dynrun, placeholder, dyninsttime, !time_offset)
             end
-            push!(nodepars, forward_index[parinst])
+            push!(instnodepars, forward_index[instant_name(get_name(dynparinst), get_time(dynparinst))])
         end
-        instgraph[node] = nodepars
+        instgraph[instnode] = instnodepars
     end
 
     instnet = InstantNetwork(variables, instgraph, placeholders)
     instrun = Runtime(instnet)
-    ensure_all!(instrun)
+    for node in get_nodes(instrun)
+        (dynname, time) = dynamic_name_and_time(node)
+        instance = instantiate!(instrun, node, time)
+        # Copy the belief from the dynamic network to the placeholder. We need to do this to ensure the placeholder has a belief,
+        # which is required by some algorithms.
+        if node isa Placeholder
+            if dynname in keys(placeholder_beliefs)
+                post_belief!(instrun, instance, placeholder_beliefs[dynname])
+            end
+        end
+    end
 
     for ((dyninst, valuename), value) in dynrun.values
         if dyninst in dyninsts
-            instinst = current_instance(instrun, forward_index[dyninst])
+            instinst = current_instance(instrun, forward_index[instant_name(get_name(dyninst), get_time(dyninst))])
             set_value!(instrun, instinst, valuename, value)
         end
     end
@@ -175,7 +187,12 @@ function retrieve_values_from_instant_runtime!(dynrun::DynamicRuntime{T},
         instinst = current_instance(instrun, node)
         (dynname, dyntime) = dynamic_name_and_time(node, T)
         dynnode = get_node(get_network(dynrun), dynname)
-        dyninst = get_instance(dynrun, dynnode, dyntime)
+        if has_instance(dynrun, dynnode, dyntime)
+            dyninst = get_instance(dynrun, dynnode, dyntime)
+        else
+            placeholder = Placeholder{output_type(dynnode)}(get_name(dynnode))
+            dyninst = get_instance(dynrun, placeholder, dyntime)
+        end
         index[instinst] = dyninst
     end
 

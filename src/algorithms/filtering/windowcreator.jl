@@ -26,29 +26,91 @@ Creates a window by instantiating all variables at all intermediate time steps f
 The `variables` argument is ignored.
 """
 function create_window(::SyncWindow, runtime::Runtime, variables_to_sample::Vector{<:Variable}, time::Int)::Vector{Instance} 
-    prevtime = time
+    previous_time = time
     net = get_network(runtime)
-    ord = topsort(get_transition_graph(net))
-    for v in variables_to_sample
-        pars = get_transition_parents(net, v)
-        for p in pars
-            time_offset = has_timeoffset(net, v, p)
-            t = get_time(latest_instance_before(runtime, p, time, !time_offset))
-            prevtime = min(prevtime, t)
+    order = topsort(get_transition_graph(net))
+
+    function get_previous_instances()
+        previous_instances = Dict{Symbol, Instance}()
+        for node in order
+            for parent in get_transition_parents(net, node)
+                time_offset = has_timeoffset(net, node, parent)
+                # time_offset = true
+                # Assuming init_filter has been called, previous_instance should exist
+                previous_instance = latest_instance_before(runtime, parent, time, !time_offset)
+                if isnothing(previous_instance)
+                    placeholder = Placeholder{output_type(parent)}(get_name(parent))
+                    previous_instance = latest_instance_before(runtime, placeholder, time, !time_offset)
+                end
+                # previous_instance = get_instance(runtime, parent, time)
+                previous_instances[get_name(previous_instance)] = previous_instance
+            end
+        end
+        previous_instances
+    end
+
+    previous_instances = get_previous_instances()
+    previous_time = time
+    for inst in values(previous_instances)
+        previous_time = min(previous_time, get_time(inst))
+    end
+
+    #   function get_window_start_time()
+    #     for variable in variables_to_sample
+    #         for parent in parents
+    #             previous_time = min(previous_time, time)
+    #         end
+    #     end
+    #     previous_time
+    # end
+
+    # previous_time = get_window_start_time()
+
+    function create_placeholders()
+        placeholders = Dict{Symbol, Instance}()
+        for node in order
+            name = get_name(node)
+            placeholder = Placeholder{output_type(node)}(name)
+            if has_instance(runtime, node, previous_time)
+                remove_instance!(runtime, node, previous_time) # We must replace the variable with the placeholder, otherwise we run into problems
+                # Careful: We must make sure placeholders can be used where variables are expected
+
+            end
+            new_instance = instantiate!(runtime, placeholder, previous_time)
+            placeholders[name] = new_instance
+        end
+        placeholders
+    end
+
+    new_instances_dict = create_placeholders()
+    all_instances = collect(values(new_instances_dict))
+
+    function copy_values_into_placeholders()
+        for ((previous_instance, value_name), value) in runtime.values
+            name = get_name(previous_instance)
+            # previous_instance = previous_instances[name]
+            new_instance = new_instances_dict[name]
+            set_value!(runtime, new_instance, value_name, value)
         end
     end
 
-    insts = Instance[]
-    for n in ord
-        ph = Placeholder{output_type(n)}(n.name)
-        push!(insts, PlaceholderInstance(ph, prevtime))
-    end
-    for t in prevtime+1:time
-        for n in ord
-            push!(insts, ensure_instance!(runtime, n, t))
+    copy_values_into_placeholders()
+        
+    function fill_in_gaps()
+        for t in previous_time+1:time
+            for node in order
+                if !has_instance(runtime, node, t)
+                    push!(all_instances, ensure_instance!(runtime, node, t))
+                else
+                    push!(all_instances, get_instance(runtime, node, t))
+                end
+            end
         end
-    end
-    return insts
+    end    
+            
+    fill_in_gaps()
+
+    all_instances
 end
 
 struct AsyncWindow{T <: Number} <: WindowCreator{T} end
@@ -65,7 +127,10 @@ function create_window(::AsyncWindow{T}, runtime::Runtime, variables::Vector{<:V
     for v in variables
         for p in get_transition_parents(get_network(runtime), v)
             if !(p in done)
-                parinst = latest_instance_before(runtime, p, time, true) # changed false to true!!!
+                time_offset = has_timeoffset(runtime.network, v, p)
+                # time_offset = true
+                parinst = latest_instance_before(runtime, p, time, !time_offset) 
+                # parinst = get_instance(runtime, p, time)
                 partime = get_time(parinst)
                 ph = Placeholder{output_type(p)}(p.name)
                 phinst = PlaceholderInstance(ph, partime)

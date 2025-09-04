@@ -76,7 +76,7 @@ end
 function prepare(alg::LazyInference, runtime::InstantRuntime,
     evidence::Dict{Symbol, <:Score} = Dict{Symbol, Score}(), 
     interventions::Dict{Symbol, <:Dist} = Dict{Symbol, Dist}(),
-    placeholder_beliefs = get_placeholder_beliefs(runtime))
+    placeholder_beliefs = get_placeholder_beliefs(runtime, get_placeholders(get_network(runtime))))
     ensure_all!(runtime)
     net = get_network(runtime)
     # The evidence, interventions, and placeholder_beliefs are punted to refine to pass to the underlying algorithm

@@ -41,6 +41,23 @@ end
 end
 
 @impl begin
+    struct SFuncLimitedSupport end
+
+    function limited_support(sf::SFunc{I,<:O}, parranges::NTuple{N,Vector}, size)::Vector{<:O} where {N, I, O}
+        sup = support(sf, parranges, size, O[])
+        if length(sup) <= size
+            return sup
+        end
+        samples = O[]
+        for i in 1:size
+            parvals = [rand(range) for range in parranges]
+            push!(samples, sample(sf, tuple(parvals...)))
+        end
+        samples
+    end
+end
+
+@impl begin
     struct DefaultWeightedValues
         num_samples::Int
     end
@@ -58,7 +75,7 @@ end
 end
 
 @impl begin
-    struct SampledFitMLEJoint end
+    struct SampledFitMLEJoint end 
     function fit_mle_joint(t::Type{D}, dat::Dist{Tuple{Tuple{}, O}})::D where {O, D <: Dist{O}}
         samples, weights = weighted_values(dat)
 

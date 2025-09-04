@@ -46,32 +46,65 @@ function _store_beliefs(wf::WindowFilter, dynrun::DynamicRuntime{T}, instrun::In
     end
 end
 
-function filter_step(wf::WindowFilter, dynrun::DynamicRuntime{T}, variables::Vector{<:Variable}, time::T, evidence::Dict{Symbol, Score}) where T
-    dynnet = get_network(dynrun)
+function create_instant_runtime(wf, dynrun, variables, time) 
     insts = create_window(wf.window_creator, dynrun, variables, time)
-    instrun = instant_runtime_from_instances(dynrun, insts)
-    # Apply the dynamic evidence to the instant runtime
+    for inst in insts
+        node = get_node(inst)
+        ensure_instance!(dynrun, node, time)
+    end
+    instant_runtime_from_instances(dynrun, insts)
+end
+
+function compile_evidence(time, evidence)
     instev = Dict{Symbol, Score}()
     for (name, sc) in evidence
         instev[instant_name(name, time)] = sc
     end
-    # Apply beliefs in the dynamic network as placeholder beliefs in the instant network.
+    instev
+end
+
+function compile_placeholders(dynrun::DynamicRuntime{T}, instrun) where T
+    dynnet = get_network(dynrun)
+    instnet = get_network(instrun)
     placeholder_beliefs = Dict{Symbol,Dist}()
-    inst_phs = get_placeholders(get_network(instrun))
+    inst_phs = get_placeholders(instnet)
     for instnode in inst_phs
         (dynname, t) = dynamic_name_and_time(instnode, T)
         dynnode = get_node(dynnet, dynname)
-        dyninst = get_instance(dynrun, dynnode, t)
+        if has_instance(dynrun, dynnode, t)
+            dyninst = get_instance(dynrun, dynnode, t)
+        else
+            placeholder = Placeholder{output_type(dynnode)}(get_name(dynnode))
+            dyninst = get_instance(dynrun, placeholder, t)
+        end            
         belief = get_value(dynrun, dyninst, :belief)
         placeholder_beliefs[get_name(instnode)] = belief
     end
+    placeholder_beliefs
+end
+
+function infer_with_instant_runtime(wf, dynrun, instrun, time, evidence)
+    instev = compile_evidence(time, evidence)
+    placeholder_beliefs = compile_placeholders(dynrun, instrun)
+    # Apply beliefs in the dynamic network as placeholder beliefs in the instant network.
     # TODO: Handle interventions
     instinterv = Dict{Symbol,Dist}()
     infer(wf.inference_algorithm, instrun, instev, instinterv, placeholder_beliefs)
+end
+
+function restore_dynamic_runtime(wf, dynrun, instrun, time)
     wf.latest_window = instrun
     retrieve_values_from_instant_runtime!(dynrun, instrun)
     set_time!(dynrun, time)
     _store_beliefs(wf, dynrun, instrun)
+end
+
+function filter_step(wf::WindowFilter, dynrun::DynamicRuntime{T}, variables::Vector{<:Variable}, time::T, evidence::Dict{Symbol, Score}) where T
+    instrun = create_instant_runtime(wf, dynrun, variables, time)
+
+    infer_with_instant_runtime(wf, dynrun, instrun, time, evidence)
+
+    restore_dynamic_runtime(wf, dynrun, instrun, time)
 end
 
 function answer(::Marginal, ::WindowFilter, dynrun::Runtime, target::VariableInstance) 

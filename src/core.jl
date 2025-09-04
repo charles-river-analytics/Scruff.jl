@@ -29,6 +29,8 @@ export
     get_node,
     get_variables,
     get_placeholders,
+    get_initial_placeholders,
+    get_transition_placeholders,
     get_nodes,
     has_timeoffset,
     input_type,
@@ -337,6 +339,7 @@ struct DynamicNetwork{I,J,O} <: Network{I,J,O}
                 transition_parents::VariableGraph,
                 parents_timeoffset::VariableParentTimeOffset = Set{Pair{Node, Node}}(),
                 init_placeholders::Vector{<:Placeholder} = Placeholder[], 
+                # TODO: Make the transition placeholders automatically computed from the transition graph.
                 trans_placeholders::Vector{<:Placeholder} = Placeholder[], 
                 outputs::Vector{<:Variable} = Variable[])
         I = Tuple{[value_type(p) for p in init_placeholders]...}

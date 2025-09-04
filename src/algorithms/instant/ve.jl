@@ -132,7 +132,7 @@ end
 function infer(alg::VE, runtime::InstantRuntime,
     evidence::Dict{Symbol, Score} = Dict{Symbol, Score}(), 
     interventions::Dict{Symbol, Dist} = Dict{Symbol, Dist}(),
-    placeholder_beliefs = get_placeholder_beliefs(runtime))
+    placeholder_beliefs = get_placeholder_beliefs(runtime, get_placeholders(get_network(runtime))))
     network = get_network(runtime)
     if !(isempty(interventions))
         error("VE cannot handle interventions")
