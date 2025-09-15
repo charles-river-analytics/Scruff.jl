@@ -24,7 +24,7 @@ mutable struct WindowFilter <: Filter
     WindowFilter(wc, ia) = new(wc, ia, run -> nothing, nothing)
 end
 
-function init_filter(wf::WindowFilter, dynrun::DynamicRuntime)
+function init_filter(wf::WindowFilter, dynrun::DynamicRuntime{T}) where T
     ensure_all!(dynrun, current_time(dynrun))
     instrun = initial_instant_runtime(dynrun)
     # We assume no evidence or interventions at time 0
@@ -46,7 +46,7 @@ function _store_beliefs(wf::WindowFilter, dynrun::DynamicRuntime{T}, instrun::In
     end
 end
 
-function create_instant_runtime(wf, dynrun, variables, time) 
+function create_instant_runtime(wf, dynrun::DynamicRuntime{T}, variables, time::T) where T
     insts = create_window(wf.window_creator, dynrun, variables, time)
     for inst in insts
         node = get_node(inst)

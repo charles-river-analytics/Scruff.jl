@@ -134,7 +134,7 @@ end
 
     @testset "Should produce a random sample of the initial range" begin
         n1 = 1000
-        n2 = 500
+        n2 = 1000
         vs = [i for i in 1:n1]
         ps = [1.0 / n1 for i in 1:n1]
         c = Cat(vs, ps)

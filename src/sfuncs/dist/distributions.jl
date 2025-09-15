@@ -5,7 +5,10 @@ export DistributionsSF
 struct DistributionsSF{D <: Distributions.Distribution, O} <: Dist{O}
     dist::D
     function DistributionsSF(dist::D) where {D <: Distributions.Distribution}
-        O = eltype(D)
+        #O = eltype(D)
+        # Why?
+        # E.g. https://github.com/JuliaStats/Distributions.jl/issues/1402
+        O = typeof(rand(dist))
         return new{D, O}(dist)
     end
     function DistributionsSF{D}(params...) where {D <: Distributions.Distribution}

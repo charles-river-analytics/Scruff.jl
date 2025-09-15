@@ -33,16 +33,17 @@ mutable struct LinearGaussian{I <: Tuple{Vararg{Float64}}} <: Conditional{I, Tup
         new{NTuple{N, Float64}}(sf, params)
     end
 end
-#=
+
+# STATS
 @impl begin
     struct LinearGaussianInitialStats end
     function initial_stats(sf::LinearGaussian)
-        (weights, bias, sd) = sf.params
+        (weights, _, _) = sf.params
         initweights = Tuple(zeros(length(weights)))
         Dict(initweights=>(0.0, 0.0))
     end
 end
-=#
+# END STATS
 
 function gensf(lg::LinearGaussian, inputs::Tuple{Vararg{Float64}})::Normal{Float64}
     (weights, bias, sd) = lg.params

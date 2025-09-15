@@ -49,7 +49,7 @@ end
     end
 end
 
-#=
+# STATS
 @impl begin
     struct MixtureInitialStats end
     initial_stats(sf::Mixture) = [initial_stats(c) for c in sf.components]
@@ -94,7 +94,7 @@ end
         return (probparams, compparams...)
     end
 end
-=#
+# END STATS
 
 @impl begin
     struct MixtureSupportQuality end

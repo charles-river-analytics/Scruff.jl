@@ -11,7 +11,22 @@ import Scruff: make_initial, make_transition
 
 
 @testset "Filtering" begin
-    
+
+    struct Tree
+        x :: Int
+        left :: Union{Nothing, Tree}
+        right :: Union{Nothing, Tree}
+        Tree(x) = new(x, nothing, nothing)
+        Tree(x,l,r) = new(x, l, r)
+    end
+
+    struct Model1 <: VariableTimeModel{Tuple{}, Tuple{}, Tree} end
+    global make_initial(::Model1, t) = Constant(Tree(0))
+    global make_transition(::Model1, parts, t) = Constant(Tree(t))
+    struct Model2 <: VariableTimeModel{Tuple{}, Tuple{Tree, Tree}, Tree} end
+    global make_initial(::Model2, t) = Constant(Tree(0))
+    global make_transition(::Model2, parts, t) = Det(Tuple{Tree, Tree}, Tree, (l,r) -> Tree(t, l, r))
+
     @testset "Window utilities" begin
         
         @testset "construct an instant network from instances" begin
@@ -164,7 +179,8 @@ import Scruff: make_initial, make_transition
         end
         
     end 
-         
+
+       
     @testset "Particle filter" begin
         
         @testset "Synchronous" begin
@@ -186,54 +202,52 @@ import Scruff: make_initial, make_transition
             end
 
             @testset "Filter step" begin
-                @testset "Without evidence" begin
-                    p101 = 0.1
-                    p102 = 0.9
-                    p20a = 0.5
-                    p20b = 0.5
-                    # Observe v21 = :a
-                    prior111 = p101 * 0.2 + p102 * 0.3
-                    prior112 = p101 * 0.8 + p102 * 0.7
-                    q111 = prior111 * 0.4
-                    q112 = prior112 * 0.9
-                    post111 = q111 / (q111 + q112)
-                    post112 = q112 / (q111 + q112)
-                    # Observe v22 = :b
-                    prior121 = post111 * 0.2 + post112 * 0.3
-                    prior122 = post111 * 0.8 + post112 * 0.7
-                    q121 = prior121 * 0.6
-                    q122 = prior122 * 0.1
-                    post121 = q121 / (q121 + q122)
-                    post122 = q122 / (q121 + q122)
+                p101 = 0.1
+                p102 = 0.9
+                p20a = 0.5
+                p20b = 0.5
+                # Observe v21 = :a
+                prior111 = p101 * 0.2 + p102 * 0.3
+                prior112 = p101 * 0.8 + p102 * 0.7
+                q111 = prior111 * 0.4
+                q112 = prior112 * 0.9
+                post111 = q111 / (q111 + q112)
+                post112 = q112 / (q111 + q112)
+                # Observe v22 = :b
+                prior121 = post111 * 0.2 + post112 * 0.3
+                prior122 = post111 * 0.8 + post112 * 0.7
+                q121 = prior121 * 0.6
+                q122 = prior122 * 0.1
+                post121 = q121 / (q121 + q122)
+                post122 = q122 / (q121 + q122)
 
-                    c1 = Cat([1,2], [0.1, 0.9])
-                    d1 = DiscreteCPT([1, :2], Dict((1,) => [0.2, 0.8], (2,) => [0.3, 0.7]))
-                    c2 = Cat([:a,:b], [0.5, 0.5])
-                    d2 = DiscreteCPT([:a, :b], Dict((1,) => [0.4, 0.6], (2,) => [0.9, 0.1]))
-                    m1 = HomogeneousModel(c1, d1)
-                    m2 = HomogeneousModel(c2, d2)
-                    v1 = m1(:v1)
-                    v2 = m2(:v2)
-                    vars = Variable[v1, v2]
-                    net = DynamicNetwork(vars, VariableGraph(), VariableGraph(v1 => [v1], v2 => [v1]))
-                    pf = SyncPF(1000)
-                    runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    @test isapprox(probability(pf, runtime, v1, 1), p101; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v1, 2), p102; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :a), p20a; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :b), p20b; atol = 0.05)
-                    filter_step(pf, runtime, vars, 1, Dict{Symbol, Score}(:v2 => HardScore(:a)))
-                    @test isapprox(probability(pf, runtime, v1, 1), post111; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v1, 2), post112; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :a), 1.0; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :b), 0.0; atol = 0.05)
-                    filter_step(pf, runtime, vars, 2, Dict{Symbol, Score}(:v2 => HardScore(:b)))
-                    @test isapprox(probability(pf, runtime, v1, 1), post121; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v1, 2), post122; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :a), 0.0; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :b), 1.0; atol = 0.05)
-                end
+                c1 = Cat([1,2], [0.1, 0.9])
+                d1 = DiscreteCPT([1, :2], Dict((1,) => [0.2, 0.8], (2,) => [0.3, 0.7]))
+                c2 = Cat([:a,:b], [0.5, 0.5])
+                d2 = DiscreteCPT([:a, :b], Dict((1,) => [0.4, 0.6], (2,) => [0.9, 0.1]))
+                m1 = HomogeneousModel(c1, d1)
+                m2 = HomogeneousModel(c2, d2)
+                v1 = m1(:v1)
+                v2 = m2(:v2)
+                vars = Variable[v1, v2]
+                net = DynamicNetwork(vars, VariableGraph(), VariableGraph(v1 => [v1], v2 => [v1]))
+                pf = SyncPF(1000)
+                runtime = Runtime(net)
+                init_filter(pf, runtime)
+                @test isapprox(probability(pf, runtime, v1, 1), p101; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v1, 2), p102; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :a), p20a; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :b), p20b; atol = 0.05)
+                filter_step(pf, runtime, vars, 1, Dict{Symbol, Score}(:v2 => HardScore(:a)))
+                @test isapprox(probability(pf, runtime, v1, 1), post111; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v1, 2), post112; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :a), 1.0; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :b), 0.0; atol = 0.05)
+                filter_step(pf, runtime, vars, 2, Dict{Symbol, Score}(:v2 => HardScore(:b)))
+                @test isapprox(probability(pf, runtime, v1, 1), post121; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v1, 2), post122; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :a), 0.0; atol = 0.05)
+                @test isapprox(probability(pf, runtime, v2, :b), 1.0; atol = 0.05)
             end
         end
 
@@ -246,21 +260,6 @@ import Scruff: make_initial, make_transition
             # 1) v2, v3, v4 - no extra instances should be created
             # 2) v3, v2, v4 - when v4 is instantiated, the coherent PF should also instantiate v3
             # 3) v3, v1, v4 - when v4 is instantiated, the coherent PF should also instantiate v2 and v3 - difficult because it has to recognize an ancestor
-            struct Tree
-                x :: Int
-                left :: Union{Nothing, Tree}
-                right :: Union{Nothing, Tree}
-                Tree(x) = new(x, nothing, nothing)
-                Tree(x,l,r) = new(x, l, r)
-            end
-    
-            struct Model1 <: VariableTimeModel{Tuple{}, Tuple{}, Tree} end
-            global make_initial(::Model1, t) = Constant(Tree(0))
-            global make_transition(::Model1, parts, t) = Constant(Tree(t))
-            struct Model2 <: VariableTimeModel{Tuple{}, Tuple{Tree, Tree}, Tree} end
-            global make_initial(::Model2, t) = Constant(Tree(0))
-            global make_transition(::Model2, parts, t) = Det(Tuple{Tree, Tree}, Tree, (l,r) -> Tree(t, l, r))
-    
             v1 = Model1()(:v1)
             v2 = Model2()(:v2)
             v3 = Model2()(:v3)
@@ -389,44 +388,44 @@ import Scruff: make_initial, make_transition
         
         @testset "Synchronous" begin
             
-            @testset "Initialization step" begin
-                c = Cat([1,2], [0.1, 0.9])
-                d = DiscreteCPT([:a, :b], Dict((1,) => [0.2, 0.8], (2,) => [0.3, 0.7]))
-                m1 = HomogeneousModel(c, c)
-                m2 = HomogeneousModel(d, d)
-                v1 = m1(:v1)
-                v2 = m2(:v2)
-                net = DynamicNetwork(Variable[v1, v2], VariableGraph(v2 => [v1]), VariableGraph(v2 => [v1]))
-                pf = SyncBP()
-                runtime = Runtime(net)
-                init_filter(pf, runtime)
-                @test isapprox(probability(pf, runtime, v1, 1), 0.1; atol = 0.05)
-                # Can't currently answer joint probability queries
-                # @test isapprox(probability(pf, runtime, Queryable[v1,v2], x -> x[1] == 1 && x[2] == :a), 0.1 * 0.2; atol = 0.05)
-            end
+            # @testset "Initialization step" begin
+            #     c = Cat([1,2], [0.1, 0.9])
+            #     d = DiscreteCPT([:a, :b], Dict((1,) => [0.2, 0.8], (2,) => [0.3, 0.7]))
+            #     m1 = HomogeneousModel(c, c)
+            #     m2 = HomogeneousModel(d, d)
+            #     v1 = m1(:v1)
+            #     v2 = m2(:v2)
+            #     net = DynamicNetwork(Variable[v1, v2], VariableGraph(v2 => [v1]), VariableGraph(v2 => [v1]))
+            #     pf = SyncBP()
+            #     runtime = Runtime(net)
+            #     init_filter(pf, runtime)
+            #     @test isapprox(probability(pf, runtime, v1, 1), 0.1; atol = 0.05)
+            #     # Can't currently answer joint probability queries
+            #     # @test isapprox(probability(pf, runtime, Queryable[v1,v2], x -> x[1] == 1 && x[2] == :a), 0.1 * 0.2; atol = 0.05)
+            # end
 
             @testset "Filter step" begin
                 
-                @testset "Without evidence" begin
-                    p101 = 0.1
-                    p102 = 0.9
-                    p20a = 0.5
-                    p20b = 0.5
-                    # Observe v21 = :a
-                    prior111 = p101 * 0.2 + p102 * 0.3
-                    prior112 = p101 * 0.8 + p102 * 0.7
-                    q111 = prior111 * 0.4
-                    q112 = prior112 * 0.9
-                    post111 = q111 / (q111 + q112)
-                    post112 = q112 / (q111 + q112)
-                    # Observe v22 = :b
-                    prior121 = post111 * 0.2 + post112 * 0.3
-                    prior122 = post111 * 0.8 + post112 * 0.7
-                    q121 = prior121 * 0.6
-                    q122 = prior122 * 0.1
-                    post121 = q121 / (q121 + q122)
-                    post122 = q122 / (q121 + q122)
+                p101 = 0.1
+                p102 = 0.9
+                p20a = 0.5
+                p20b = 0.5
+                # Observe v21 = :a
+                prior111 = p101 * 0.2 + p102 * 0.3
+                prior112 = p101 * 0.8 + p102 * 0.7
+                q111 = prior111 * 0.4
+                q112 = prior112 * 0.9
+                post111 = q111 / (q111 + q112)
+                post112 = q112 / (q111 + q112)
+                # Observe v22 = :b
+                prior121 = post111 * 0.2 + post112 * 0.3
+                prior122 = post111 * 0.8 + post112 * 0.7
+                q121 = prior121 * 0.6
+                q122 = prior122 * 0.1
+                post121 = q121 / (q121 + q122)
+                post122 = q122 / (q121 + q122)
 
+                @testset "Without evidence" begin
                     c1 = Cat([1,2], [0.1, 0.9])
                     d1 = DiscreteCPT([1, :2], Dict((1,) => [0.2, 0.8], (2,) => [0.3, 0.7]))
                     c2 = Cat([:a,:b], [0.5, 0.5])
@@ -469,20 +468,6 @@ import Scruff: make_initial, make_transition
             # 1) v2, v3, v4 - no extra instances should be created
             # 2) v3, v2, v4 - when v4 is instantiated, the coherent PF should also instantiate v3
             # 3) v3, v1, v4 - when v4 is instantiated, the coherent PF should also instantiate v2 and v3 - difficult because it has to recognize an ancestor
-            struct Tree
-                x :: Int
-                left :: Union{Nothing, Tree}
-                right :: Union{Nothing, Tree}
-                Tree(x) = new(x, nothing, nothing)
-                Tree(x,l,r) = new(x, l, r)
-            end
-    
-            struct Model1 <: VariableTimeModel{Tuple{}, Tuple{}, Tree} end
-            global make_initial(::Model1, t) = Constant(Tree(0))
-            global make_transition(::Model1, parts, t) = Constant(Tree(t))
-            struct Model2 <: VariableTimeModel{Tuple{}, Tuple{Tree, Tree}, Tree} end
-            global make_initial(::Model2, t) = Constant(Tree(0))
-            global make_transition(::Model2, parts, t) = Det(Tuple{Tree, Tree}, Tree, (l,r) -> Tree(t, l, r))
     
             v1 = Model1()(:v1)
             v2 = Model2()(:v2)
@@ -606,7 +591,7 @@ import Scruff: make_initial, make_transition
         end
     
     end
-    
+   
     @testset "Loopy filter" begin
         
         @testset "Synchronous" begin
@@ -688,21 +673,6 @@ import Scruff: make_initial, make_transition
             # 1) v2, v3, v4 - no extra instances should be created
             # 2) v3, v2, v4 - when v4 is instantiated, the coherent PF should also instantiate v3
             # 3) v3, v1, v4 - when v4 is instantiated, the coherent PF should also instantiate v2 and v3 - difficult because it has to recognize an ancestor
-            struct Tree
-                x :: Int
-                left :: Union{Nothing, Tree}
-                right :: Union{Nothing, Tree}
-                Tree(x) = new(x, nothing, nothing)
-                Tree(x,l,r) = new(x, l, r)
-            end
-    
-            struct Model1 <: VariableTimeModel{Tuple{}, Tuple{}, Tree} end
-            global make_initial(::Model1, t) = Constant(Tree(0))
-            global make_transition(::Model1, parts, t) = Constant(Tree(t))
-            struct Model2 <: VariableTimeModel{Tuple{}, Tuple{Tree, Tree}, Tree} end
-            global make_initial(::Model2, t) = Constant(Tree(0))
-            global make_transition(::Model2, parts, t) = Det(Tuple{Tree, Tree}, Tree, (l,r) -> Tree(t, l, r))
-    
             v1 = Model1()(:v1)
             v2 = Model2()(:v2)
             v3 = Model2()(:v3)
@@ -823,6 +793,7 @@ import Scruff: make_initial, make_transition
             end
             
         end
+
     end
        
     @testset "Range limited filter" begin

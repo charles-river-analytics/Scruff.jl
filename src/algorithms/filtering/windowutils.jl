@@ -16,7 +16,7 @@ end
 """
 Create a dynamic name and time from an instant node. T is the time type.
 """
-function dynamic_name_and_time(instant_node::Node, T = Int)::Tuple{Symbol, T} 
+function dynamic_name_and_time(instant_node::Node, T)::Tuple{Symbol, T} 
     instant_name = collect(repr(instant_node.name))
     # Need to handle two different representations of symbols
     if length(instant_name) >= 6 && instant_name[1:6] == ['S', 'y', 'm', 'b', 'o', 'l']
@@ -64,13 +64,14 @@ values from the dynamic runtime with the corresponding instances in the instant 
 This function is useful for running instant algorithms on a time window 
 for dynamic reasoning.
 """
-function instant_runtime_from_instances(dynrun::DynamicRuntime, dyninsts::Vector{Instance})
+function instant_runtime_from_instances(dynrun::DynamicRuntime{T}, dyninsts::Vector{Instance}) where T
     dynnet = get_network(dynrun)
     forward_index = Dict{Symbol, Node}()
     back_index = Dict{Symbol, Instance}()
     # placeholders = map(i -> get_node(i), filter(i -> i isa PlaceholderInstance, dyninsts))
     placeholders = filter(i -> i isa PlaceholderInstance, dyninsts)
     placeholder_beliefs = get_placeholder_beliefs(dynrun, placeholders)
+
     placeholders = Placeholder[]
     variables = Variable[]
     instnodes = Node[]
@@ -112,7 +113,7 @@ function instant_runtime_from_instances(dynrun::DynamicRuntime, dyninsts::Vector
     instnet = InstantNetwork(variables, instgraph, placeholders)
     instrun = Runtime(instnet)
     for node in get_nodes(instrun)
-        (dynname, time) = dynamic_name_and_time(node)
+        (dynname, time) = dynamic_name_and_time(node, T)
         instance = instantiate!(instrun, node, time)
         # Copy the belief from the dynamic network to the placeholder. We need to do this to ensure the placeholder has a belief,
         # which is required by some algorithms.

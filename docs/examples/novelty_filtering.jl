@@ -52,7 +52,7 @@ obsname(i) = Symbol("obs", i)
 
 function do_experiment(setup::NoveltySetup, obs::Vector{Tuple{Float64, Float64}}, alg::Filter)
     net = novelty_network(setup, length(obs))
-    runtime = Runtime(net, 0.0) # Set the time type to Float64 and initial time to 0
+    runtime = Runtime(net, 0.0) # Set the time type to Float64 and initial time to 0.0
     init_filter(alg, runtime)
 
     is_novel = get_node(net, :is_novel)

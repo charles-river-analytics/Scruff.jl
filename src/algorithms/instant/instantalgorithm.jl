@@ -21,9 +21,9 @@ abstract type InstantAlgorithm <: Algorithm end
 # such an sfunc.
 """
     infer(algorithm::InstantAlgorithm, runtime::InstantRuntime,
-        evidence::Dict{Symbol, Score},
-        interventions::Dict{Symbol, Dist},
-        placeholder_beliefs::Dict{Symbol, Dist})
+        evidence::Dict{Symbol, <:Score},
+        interventions::Dict{Symbol, <:Dist},
+        placeholder_beliefs::Dict{Symbol, <:Dist})
 
 Run the inference algorithm.
 

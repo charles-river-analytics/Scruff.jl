@@ -2,6 +2,7 @@ export
     VE,
     ve
 
+import CliqueTrees
 import ..Operators.make_factors
 import ..SFuncs: Invertible, Serial
 using Folds
@@ -130,8 +131,8 @@ function marginalize(runtime, factor::Factor, keys::Dict{<:Node,Int}, query_vars
 end
 
 function infer(alg::VE, runtime::InstantRuntime,
-    evidence::Dict{Symbol, Score} = Dict{Symbol, Score}(), 
-    interventions::Dict{Symbol, Dist} = Dict{Symbol, Dist}(),
+    evidence::Dict{Symbol, <:Score} = Dict{Symbol, Score}(), 
+    interventions::Dict{Symbol, <:Dist} = Dict{Symbol, Dist}(),
     placeholder_beliefs = get_placeholder_beliefs(runtime, get_placeholders(get_network(runtime))))
     network = get_network(runtime)
     if !(isempty(interventions))
@@ -402,17 +403,42 @@ function cost(g :: Graph, n :: Int)
 end
 
 function greedy_order(g :: Graph, to_leave :: Array{Int})
-    candidates = filter(n -> !(n in to_leave), g.nodes)
-    result = []
-    h = copy_graph(g)
-    while !isempty(candidates)
-        costs = map(c -> cost(h, c), candidates)
-        best = candidates[argmin(costs)]
-        push!(result, best)
-        eliminate(h, best)
-        deleteat!(candidates, findfirst(n -> n == best, candidates))
+    n = length(g.nodes)
+    m = length(to_leave)
+    index = sizehint!(Dict{Int, Int}(), n)
+    graph = CliqueTrees.Graph{Int}(n)
+    clique = Vector{Int}(undef, m)
+
+    # construct index
+    for (i, v) in enumerate(g.nodes)
+        index[v] = i
     end
-    return result
+    
+    # construct graph
+    for v in g.nodes
+        for w in g.edges[v]
+            if index[v] < index[w]
+                CliqueTrees.add_edge!(graph, index[v], index[w])
+            end
+        end
+    end
+    
+    # form a clique from the variables in `to_leave`
+    for i in 1:m
+        v = to_leave[i]
+        
+        for ii in i + 1:m
+            vv = to_leave[ii]
+            CliqueTrees.add_edge!(graph, index[v], index[vv])
+        end
+        
+        clique[i] = index[v]
+    end
+    
+    # compute ordering
+    alg = CliqueTrees.CompositeRotations(clique, CliqueTrees.MF())
+    perm, _ = CliqueTrees.permutation(graph; alg)
+    return g.nodes[perm[begin:end - m]]
 end
 
 function greedy_order(g :: Graph)

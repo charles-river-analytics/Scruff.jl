@@ -1,0 +1,11 @@
+function make_two_node_dynamic_network(n1, n2)
+    c1 = make_cat(n1)
+    d1 = make_cpd_1parent(n1, n2)
+    c2 = make_cat(n2)
+    d2 = make_cpd_1parent(n2, n1)
+    m1 = HomogeneousModel(c1, d1)
+    m2 = HomogeneousModel(c2, d2)
+    v1 = m1(:v1)
+    v2 = m2(:v2)
+    (DynamicNetwork(Variable[v1, v2], VariableGraph(), VariableGraph(v1 => [v1], v2 => [v1])), v1, v2)
+end

@@ -226,14 +226,14 @@ end
         return LogScore(target_parrange, result)
     end
 end
-#=
+# STATS
 @impl begin
     struct DetInitialStats end
-    initial_stats(sf::Det) = nothing
+    initial_stats(::Det) = nothing
 end
 @impl begin
     struct DetAccumulateStats end
-    accumulate_stats(sf::Det, existing_stats, new_stats) = nothing
+    accumulate_stats(::Det, existing_stats, new_stats) = nothing
 end
 @impl begin
     struct DetExpectedStats end
@@ -247,7 +247,7 @@ end
 end
 @impl begin
     struct DetMaximizeStats end
-    maximize_stats(sf::Det, stats) = nothing
+    maximize_stats(::Det, stats) = nothing
 end
-=#
+# STATS END
 

@@ -13,8 +13,8 @@ The `Operators` module defines the following interfaces for the following operat
 - `f_expectation(sf::SFunc{I,O}, i::I, fn::Function) where {I,O}`
 - `expectation(sf::SFunc{I,O}, i::I)::O where {I,O}`
 - `variance(sf::SFunc{I,O}, i::I)::O where {I,O}`
-- `get_params(sf::SFunc{I,O,P})::P where {I,O,P}`
-- `set_params!(sf::SFunc{I,O,P}, p::P)::SFunc{I,O,P} where {I,O,P}`
+- `get_config_spec(sf::SFunc{I,O,P})::P where {I,O,P}`
+- `set_config_spec!(sf::SFunc{I,O,P}, p::P)::SFunc{I,O,P} where {I,O,P}`
 - `get_score(sf::SFunc{Tuple{I},O}, i::I)::AbstractFloat where {I,O}`
 - `get_log_score(sf::SFunc{Tuple{I},O}, i::I)::AbstractFloat where {I,O}`
 - ```support(sf::SFunc{I,O}, 

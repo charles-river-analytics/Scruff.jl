@@ -146,7 +146,7 @@ end
     end
 end
 
-#=
+# STATS
 @impl begin
     struct ExtendInitialStat end
     initial_stats(sf::Extend) = initial_stats(sf.given)
@@ -178,6 +178,6 @@ end
     struct ExtendMaximizeStats end
     maximize_stats(sf::Extend, stats) = maximize_stats(sf.given, stats)
 end
-=#
+# STATS END
 
 

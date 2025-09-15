@@ -128,7 +128,7 @@ get_name(i::Instance):: Symbol = get_node(i).name
 
 Get the instance's variable's underlying model.
 """
-get_definition(i::VariableInstance)::D where {D<:ValueTyped} = get_variable(i).model
+get_definition(i::VariableInstance)::D where {D<:ValueTyped} = get_node(i).model
 
 """
     get_model(i::VariableInstance)::D where {D<:ValueTyped}
@@ -631,7 +631,9 @@ end
 has_belief(runtime::Runtime, inst::Instance) = has_value(runtime, inst, BELIEF)
 
 # I THINK THE FIX IS FOR PLACEHOLDERS TO BE INSTANCES, RATHER THAN USING CURRENT_INSTANCE. WE MUST MAKE SURE THAT STAYS CORRECT FOR OTHER USES.
-function get_placeholder_beliefs(runtime::Runtime, placeholder_instances)::Dict{Symbol,Dist}
+# AJP: Yes, sometimes the algorithms need to specify exactly which instances to use. But sometimes they pass variables with the intent to
+# use current_instance. So let's just keep both versions.
+function get_placeholder_beliefs(runtime::Runtime, placeholder_instances:: Vector{Instance})::Dict{Symbol,Dist}
     result = Dict{Symbol,Dist}()
     # for ph in get_placeholders(get_network(runtime))
     for phi in placeholder_instances
@@ -641,17 +643,17 @@ function get_placeholder_beliefs(runtime::Runtime, placeholder_instances)::Dict{
     end
     return result
 end
-# function get_placeholder_beliefs(runtime::Runtime, placeholders)::Dict{Symbol,Dist}
-#     result = Dict{Symbol,Dist}()
-#     # for ph in get_placeholders(get_network(runtime))
-#     for ph in placeholders
-#         i = current_instance(runtime, ph)
-#         if has_belief(runtime, i)
-#             result[ph.name] = get_belief(runtime, i)
-#         end
-#     end
-#     return result
-# end
+function get_placeholder_beliefs(runtime::Runtime, placeholders:: Vector{Placeholder})::Dict{Symbol,Dist}
+    result = Dict{Symbol,Dist}()
+    # for ph in get_placeholders(get_network(runtime))
+    for ph in placeholders
+        i = current_instance(runtime, ph)
+        if has_belief(runtime, i)
+            result[ph.name] = get_belief(runtime, i)
+        end
+    end
+    return result
+end
 """
     EVIDENCE
 

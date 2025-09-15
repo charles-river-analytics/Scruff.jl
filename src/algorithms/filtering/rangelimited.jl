@@ -15,21 +15,21 @@ function filter_step(rl::RangeLimited, dynrun::DynamicRuntime{T}, variables::Vec
     wf = rl.inner_filter
     instrun = create_instant_runtime(wf, dynrun, variables, time)
     infer_with_instant_runtime(wf, dynrun, instrun, time, evidence)
-    limit_and_set_beliefs!(instrun, rl.limits) # Intercept ordinary inference with the inner filter here to limit the ranges.
+    limit_and_set_beliefs!(instrun, rl.limits, T) # Intercept ordinary inference with the inner filter here to limit the ranges.
     restore_dynamic_runtime(wf, dynrun, instrun, time)
 end
 
-function limit_and_set_beliefs!(runtime::Runtime, limits::Dict{Symbol, Integer}) 
+function limit_and_set_beliefs!(runtime::Runtime, limits::Dict{Symbol, Integer}, timetype) 
     network = get_network(runtime)
     ranges = Dict{Symbol, Vector{T} where T}()
     for node in topsort(get_initial_graph(network))
-        set_range_and_belief!(runtime, network, node, ranges, limits)
+        set_range_and_belief!(runtime, network, node, ranges, limits, timetype)
     end
 end
 
-function set_range_and_belief!(runtime, network, node, ranges, limits) 
+function set_range_and_belief!(runtime, network, node, ranges, limits, timetype) 
     # The keys of limits are based on the plain dynamic names and don't have the underscores of instant names
-    (key, _) = dynamic_name_and_time(node)
+    (key, _) = dynamic_name_and_time(node, timetype)
     if key in keys(limits)
         instance = current_instance(runtime, node)
         name = get_name(node)

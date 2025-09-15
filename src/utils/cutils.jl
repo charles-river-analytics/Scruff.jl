@@ -11,7 +11,8 @@ export
     mult_through,
     add_through,
     ancestors,
-    topsort
+    topsort,
+    converged_numeric
 
 ###############################################
 #                                             #
@@ -292,4 +293,66 @@ function topsort(graph::Dict{U, Vector{U}}) :: Vector{U} where U
         end
     end
     return result
+end
+
+diff(x :: Number, y :: Number) = abs(x-y)
+
+function diff(xs :: Dict, ys :: Dict)
+    total = 0.0
+    for k in keys(xs)
+        total += diff(xs[k], ys[k])
+    end
+    return total
+end
+
+function diff(xs :: Vector, ys :: Vector)
+    total = 0.0
+    for i in eachindex(xs)
+        total += diff(xs[i], ys[i])
+    end
+    return total
+end
+
+function same_structure_and_num_params(:: Number, :: Number) 
+    return (true, 1)
+end
+
+function same_structure_and_num_params(xs :: Dict, ys :: Dict)
+    if Set(keys(xs)) != Set(keys(ys))
+        return (false, 0)
+    end
+    np = 0
+    for k in keys(xs)
+        (b, n) = same_structure_and_num_params(xs[k], ys[k])
+        if !b
+            return (false, np)
+        else
+            np += n
+        end
+    end
+    return (true, np)
+end
+
+function same_structure_and_num_params(xs :: Vector, ys :: Vector)
+    if length(xs) != length(ys)
+        return (false, 0)
+    end
+    np = 0
+    for i in eachindex(xs)
+        (b, n) = same_structure_and_num_params(xs[i], ys[i])
+        if !b
+            return(false, np)
+        else
+            np += n
+        end
+    end
+    return(true, np)
+end
+
+function converged_numeric(oldp, newp, eps::Float64 = 0.01)
+    (same_structure, num_params) = same_structure_and_num_params(oldp, newp)
+    if !same_structure
+        return false
+    end
+    return diff(newp, oldp) / num_params < eps
 end

@@ -243,7 +243,8 @@ end
             parranges, incoming_pis, parent_idx)
     end
 end
-#=
+
+# STATS
 @impl begin
     struct SerialInitialStats end
     initial_stats(sf::Serial) = map(initial_stats, sf.components)
@@ -286,7 +287,7 @@ end
         return tuple(ps...)
     end
 end
-=#
+# STATS END
             
 
 
