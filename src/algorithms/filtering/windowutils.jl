@@ -9,7 +9,7 @@ export
 """
 Create a name in an instant network corresponding to the given dynamic name and time.
 """
-function instant_name(dynamic_name::Symbol, time::Number)::Symbol
+function instant_name(dynamic_name::Symbol, time)::Symbol
     return Symbol(dynamic_name, "_", time)
 end
 

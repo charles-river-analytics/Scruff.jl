@@ -193,12 +193,12 @@ import Scruff: make_initial, make_transition
                 v1 = m1(:v1)
                 v2 = m2(:v2)
                 net = DynamicNetwork(Variable[v1, v2], VariableGraph(v2 => [v1]), VariableGraph(v2 => [v1]))
-                pf = SyncPF(1000)
+                filter = SyncPF(1000)
                 runtime = Runtime(net)
-                init_filter(pf, runtime)
-                @test isapprox(probability(pf, runtime, v1, 1), 0.1; atol = 0.05)
+                init_filter(filter, runtime)
+                @test isapprox(probability(filter, runtime, v1, 1), 0.1; atol = 0.05)
                 # Can't currently answer joint probability queries
-                # @test isapprox(probability(pf, runtime, Queryable[v1,v2], x -> x[1] == 1 && x[2] == :a), 0.1 * 0.2; atol = 0.05)
+                # @test isapprox(probability(filter, runtime, Queryable[v1,v2], x -> x[1] == 1 && x[2] == :a), 0.1 * 0.2; atol = 0.05)
             end
 
             @testset "Filter step" begin
@@ -231,23 +231,23 @@ import Scruff: make_initial, make_transition
                 v2 = m2(:v2)
                 vars = Variable[v1, v2]
                 net = DynamicNetwork(vars, VariableGraph(), VariableGraph(v1 => [v1], v2 => [v1]))
-                pf = SyncPF(1000)
+                filter = SyncPF(1000)
                 runtime = Runtime(net)
-                init_filter(pf, runtime)
-                @test isapprox(probability(pf, runtime, v1, 1), p101; atol = 0.05)
-                @test isapprox(probability(pf, runtime, v1, 2), p102; atol = 0.05)
-                @test isapprox(probability(pf, runtime, v2, :a), p20a; atol = 0.05)
-                @test isapprox(probability(pf, runtime, v2, :b), p20b; atol = 0.05)
-                filter_step(pf, runtime, vars, 1, Dict{Symbol, Score}(:v2 => HardScore(:a)))
-                @test isapprox(probability(pf, runtime, v1, 1), post111; atol = 0.05)
-                @test isapprox(probability(pf, runtime, v1, 2), post112; atol = 0.05)
-                @test isapprox(probability(pf, runtime, v2, :a), 1.0; atol = 0.05)
-                @test isapprox(probability(pf, runtime, v2, :b), 0.0; atol = 0.05)
-                filter_step(pf, runtime, vars, 2, Dict{Symbol, Score}(:v2 => HardScore(:b)))
-                @test isapprox(probability(pf, runtime, v1, 1), post121; atol = 0.05)
-                @test isapprox(probability(pf, runtime, v1, 2), post122; atol = 0.05)
-                @test isapprox(probability(pf, runtime, v2, :a), 0.0; atol = 0.05)
-                @test isapprox(probability(pf, runtime, v2, :b), 1.0; atol = 0.05)
+                init_filter(filter, runtime)
+                @test isapprox(probability(filter, runtime, v1, 1), p101; atol = 0.05)
+                @test isapprox(probability(filter, runtime, v1, 2), p102; atol = 0.05)
+                @test isapprox(probability(filter, runtime, v2, :a), p20a; atol = 0.05)
+                @test isapprox(probability(filter, runtime, v2, :b), p20b; atol = 0.05)
+                filter_step(filter, runtime, vars, 1, Dict{Symbol, Score}(:v2 => HardScore(:a)))
+                @test isapprox(probability(filter, runtime, v1, 1), post111; atol = 0.05)
+                @test isapprox(probability(filter, runtime, v1, 2), post112; atol = 0.05)
+                @test isapprox(probability(filter, runtime, v2, :a), 1.0; atol = 0.05)
+                @test isapprox(probability(filter, runtime, v2, :b), 0.0; atol = 0.05)
+                filter_step(filter, runtime, vars, 2, Dict{Symbol, Score}(:v2 => HardScore(:b)))
+                @test isapprox(probability(filter, runtime, v1, 1), post121; atol = 0.05)
+                @test isapprox(probability(filter, runtime, v1, 2), post122; atol = 0.05)
+                @test isapprox(probability(filter, runtime, v2, :a), 0.0; atol = 0.05)
+                @test isapprox(probability(filter, runtime, v2, :b), 1.0; atol = 0.05)
             end
         end
 
@@ -269,54 +269,54 @@ import Scruff: make_initial, make_transition
     
             @testset "Non-coherent PF" begin
                 @testset "Order 2-3-4" begin
-                    pf = AsyncPF(10, 10, Int)
+                    filter = AsyncPF(10, 10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v2], 2, noev)
-                    filter_step(pf, runtime, Variable[v3], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v2], 2, noev)
+                    filter_step(filter, runtime, Variable[v3], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t22 = Tree(2, t0, t0)
                     t33 = Tree(3, t0, t22)
                     t45 = Tree(5, t0, t33)
-                    @test probability(pf, runtime, v1, t0) == 1.0
-                    @test probability(pf, runtime, v2, t22) == 1.0
-                    @test probability(pf, runtime, v3, t33) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t0) == 1.0
+                    @test probability(filter, runtime, v2, t22) == 1.0
+                    @test probability(filter, runtime, v3, t33) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
     
                 @testset "Order 3-2-4" begin
-                    pf = AsyncPF(10, 10, Int)
+                    filter = AsyncPF(10, 10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v3], 2, noev)
-                    filter_step(pf, runtime, Variable[v2], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v3], 2, noev)
+                    filter_step(filter, runtime, Variable[v2], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t32 = Tree(2, t0, t0)
                     t23 = Tree(3, t0, t0)
                     t45 = Tree(5, t0, t32)
-                    @test probability(pf, runtime, v1, t0) == 1.0
-                    @test probability(pf, runtime, v2, t23) == 1.0
-                    @test probability(pf, runtime, v3, t32) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t0) == 1.0
+                    @test probability(filter, runtime, v2, t23) == 1.0
+                    @test probability(filter, runtime, v3, t32) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
     
                 @testset "Order 3-1-4" begin
-                    pf = AsyncPF(10, 10, Int)
+                    filter = AsyncPF(10, 10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v3], 2, noev)
-                    filter_step(pf, runtime, Variable[v1], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v3], 2, noev)
+                    filter_step(filter, runtime, Variable[v1], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t32 = Tree(2, t0, t0)
                     t13 = Tree(3, nothing, nothing)
                     t45 = Tree(5, t0, t32)
-                    @test probability(pf, runtime, v1, t13) == 1.0
-                    @test probability(pf, runtime, v2, t0) == 1.0
-                    @test probability(pf, runtime, v3, t32) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t13) == 1.0
+                    @test probability(filter, runtime, v2, t0) == 1.0
+                    @test probability(filter, runtime, v3, t32) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
                 
             end
@@ -324,57 +324,57 @@ import Scruff: make_initial, make_transition
             @testset "Coherent PF" begin
                 
                 @testset "Order 2-3-4" begin
-                    pf = CoherentPF(10, 10, Int)
+                    filter = CoherentPF(10, 10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v2], 2, noev)
-                    filter_step(pf, runtime, Variable[v3], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v2], 2, noev)
+                    filter_step(filter, runtime, Variable[v3], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t22 = Tree(2, t0, t0)
                     t33 = Tree(3, t0, t22)
                     t45 = Tree(5, t0, t33)
-                    @test probability(pf, runtime, v1, t0) == 1.0
-                    @test probability(pf, runtime, v2, t22) == 1.0
-                    @test probability(pf, runtime, v3, t33) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t0) == 1.0
+                    @test probability(filter, runtime, v2, t22) == 1.0
+                    @test probability(filter, runtime, v3, t33) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
     
                 @testset "Order 3-2-4" begin
-                    pf = CoherentPF(10, 10, Int)
+                    filter = CoherentPF(10, 10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v3], 2, noev)
-                    filter_step(pf, runtime, Variable[v2], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v3], 2, noev)
+                    filter_step(filter, runtime, Variable[v2], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t32 = Tree(2, t0, t0)
                     t23 = Tree(3, t0, t0)
                     t35 = Tree(5, t32, t23) # extra instance added
                     t45 = Tree(5, t0, t35)
-                    @test probability(pf, runtime, v1, t0) == 1.0
-                    @test probability(pf, runtime, v2, t23) == 1.0
-                    @test probability(pf, runtime, v3, t35) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t0) == 1.0
+                    @test probability(filter, runtime, v2, t23) == 1.0
+                    @test probability(filter, runtime, v3, t35) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
     
                 @testset "Order 3-1-4" begin
-                    pf = CoherentPF(10, 10, Int)
+                    filter = CoherentPF(10, 10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v3], 2, noev)
-                    filter_step(pf, runtime, Variable[v1], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v3], 2, noev)
+                    filter_step(filter, runtime, Variable[v1], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t32 = Tree(2, t0, t0)
                     t13 = Tree(3, nothing, nothing)
                     t25 = Tree(5, t0, t13) # added
                     t35 = Tree(5, t32, t25) # added
                     t45 = Tree(5, t0, t35)
-                    @test probability(pf, runtime, v1, t13) == 1.0
-                    @test probability(pf, runtime, v2, t25) == 1.0
-                    @test probability(pf, runtime, v3, t35) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t13) == 1.0
+                    @test probability(filter, runtime, v2, t25) == 1.0
+                    @test probability(filter, runtime, v3, t35) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
                 
             end
@@ -396,12 +396,12 @@ import Scruff: make_initial, make_transition
             #     v1 = m1(:v1)
             #     v2 = m2(:v2)
             #     net = DynamicNetwork(Variable[v1, v2], VariableGraph(v2 => [v1]), VariableGraph(v2 => [v1]))
-            #     pf = SyncBP()
+            #     filter = SyncBP()
             #     runtime = Runtime(net)
-            #     init_filter(pf, runtime)
-            #     @test isapprox(probability(pf, runtime, v1, 1), 0.1; atol = 0.05)
+            #     init_filter(filter, runtime)
+            #     @test isapprox(probability(filter, runtime, v1, 1), 0.1; atol = 0.05)
             #     # Can't currently answer joint probability queries
-            #     # @test isapprox(probability(pf, runtime, Queryable[v1,v2], x -> x[1] == 1 && x[2] == :a), 0.1 * 0.2; atol = 0.05)
+            #     # @test isapprox(probability(filter, runtime, Queryable[v1,v2], x -> x[1] == 1 && x[2] == :a), 0.1 * 0.2; atol = 0.05)
             # end
 
             @testset "Filter step" begin
@@ -436,23 +436,23 @@ import Scruff: make_initial, make_transition
                     v2 = m2(:v2)
                     vars = Variable[v1, v2]
                     net = DynamicNetwork(vars, VariableGraph(), VariableGraph(v1 => [v1], v2 => [v1]))
-                    pf = SyncBP()
+                    filter = SyncBP()
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    @test isapprox(probability(pf, runtime, v1, 1), p101; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v1, 2), p102; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :a), p20a; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :b), p20b; atol = 0.05)
-                    filter_step(pf, runtime, vars, 1, Dict{Symbol, Score}(:v2 => HardScore(:a)))
-                    @test isapprox(probability(pf, runtime, v1, 1), post111; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v1, 2), post112; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :a), 1.0; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :b), 0.0; atol = 0.05)
-                    filter_step(pf, runtime, vars, 2, Dict{Symbol, Score}(:v2 => HardScore(:b)))
-                    @test isapprox(probability(pf, runtime, v1, 1), post121; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v1, 2), post122; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :a), 0.0; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :b), 1.0; atol = 0.05)
+                    init_filter(filter, runtime)
+                    @test isapprox(probability(filter, runtime, v1, 1), p101; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v1, 2), p102; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v2, :a), p20a; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v2, :b), p20b; atol = 0.05)
+                    filter_step(filter, runtime, vars, 1, Dict{Symbol, Score}(:v2 => HardScore(:a)))
+                    @test isapprox(probability(filter, runtime, v1, 1), post111; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v1, 2), post112; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v2, :a), 1.0; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v2, :b), 0.0; atol = 0.05)
+                    filter_step(filter, runtime, vars, 2, Dict{Symbol, Score}(:v2 => HardScore(:b)))
+                    @test isapprox(probability(filter, runtime, v1, 1), post121; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v1, 2), post122; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v2, :a), 0.0; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v2, :b), 1.0; atol = 0.05)
                 end
                 
             end
@@ -478,54 +478,54 @@ import Scruff: make_initial, make_transition
     
             @testset "Non-coherent PF" begin
                 @testset "Order 2-3-4" begin
-                    pf = AsyncBP(10, Int)
+                    filter = AsyncBP(10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v2], 2, noev)
-                    filter_step(pf, runtime, Variable[v3], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v2], 2, noev)
+                    filter_step(filter, runtime, Variable[v3], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t22 = Tree(2, t0, t0)
                     t33 = Tree(3, t0, t22)
                     t45 = Tree(5, t0, t33)
-                    @test probability(pf, runtime, v1, t0) == 1.0
-                    @test probability(pf, runtime, v2, t22) == 1.0
-                    @test probability(pf, runtime, v3, t33) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t0) == 1.0
+                    @test probability(filter, runtime, v2, t22) == 1.0
+                    @test probability(filter, runtime, v3, t33) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
     
                 @testset "Order 3-2-4" begin
-                    pf = AsyncBP(10, Int)
+                    filter = AsyncBP(10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v3], 2, noev)
-                    filter_step(pf, runtime, Variable[v2], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v3], 2, noev)
+                    filter_step(filter, runtime, Variable[v2], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t32 = Tree(2, t0, t0)
                     t23 = Tree(3, t0, t0)
                     t45 = Tree(5, t0, t32)
-                    @test probability(pf, runtime, v1, t0) == 1.0
-                    @test probability(pf, runtime, v2, t23) == 1.0
-                    @test probability(pf, runtime, v3, t32) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t0) == 1.0
+                    @test probability(filter, runtime, v2, t23) == 1.0
+                    @test probability(filter, runtime, v3, t32) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
     
                 @testset "Order 3-1-4" begin
-                    pf = AsyncBP(10, Int)
+                    filter = AsyncBP(10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v3], 2, noev)
-                    filter_step(pf, runtime, Variable[v1], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v3], 2, noev)
+                    filter_step(filter, runtime, Variable[v1], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t32 = Tree(2, t0, t0)
                     t13 = Tree(3, nothing, nothing)
                     t45 = Tree(5, t0, t32)
-                    @test probability(pf, runtime, v1, t13) == 1.0
-                    @test probability(pf, runtime, v2, t0) == 1.0
-                    @test probability(pf, runtime, v3, t32) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t13) == 1.0
+                    @test probability(filter, runtime, v2, t0) == 1.0
+                    @test probability(filter, runtime, v3, t32) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
                 
             end
@@ -533,57 +533,57 @@ import Scruff: make_initial, make_transition
             @testset "Coherent BP" begin
                 
                 @testset "Order 2-3-4" begin
-                    pf = CoherentBP(10, Int)
+                    filter = CoherentBP(10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v2], 2, noev)
-                    filter_step(pf, runtime, Variable[v3], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v2], 2, noev)
+                    filter_step(filter, runtime, Variable[v3], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t22 = Tree(2, t0, t0)
                     t33 = Tree(3, t0, t22)
                     t45 = Tree(5, t0, t33)
-                    @test probability(pf, runtime, v1, t0) == 1.0
-                    @test probability(pf, runtime, v2, t22) == 1.0
-                    @test probability(pf, runtime, v3, t33) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t0) == 1.0
+                    @test probability(filter, runtime, v2, t22) == 1.0
+                    @test probability(filter, runtime, v3, t33) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
     
                 @testset "Order 3-2-4" begin
-                    pf = CoherentBP(10, Int)
+                    filter = CoherentBP(10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v3], 2, noev)
-                    filter_step(pf, runtime, Variable[v2], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v3], 2, noev)
+                    filter_step(filter, runtime, Variable[v2], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t32 = Tree(2, t0, t0)
                     t23 = Tree(3, t0, t0)
                     t35 = Tree(5, t32, t23) # extra instance added
                     t45 = Tree(5, t0, t35)
-                    @test probability(pf, runtime, v1, t0) == 1.0
-                    @test probability(pf, runtime, v2, t23) == 1.0
-                    @test probability(pf, runtime, v3, t35) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t0) == 1.0
+                    @test probability(filter, runtime, v2, t23) == 1.0
+                    @test probability(filter, runtime, v3, t35) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
     
                 @testset "Order 3-1-4" begin
-                    pf = CoherentBP(10, Int)
+                    filter = CoherentBP(10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v3], 2, noev)
-                    filter_step(pf, runtime, Variable[v1], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v3], 2, noev)
+                    filter_step(filter, runtime, Variable[v1], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t32 = Tree(2, t0, t0)
                     t13 = Tree(3, nothing, nothing)
                     t25 = Tree(5, t0, t13) # added
                     t35 = Tree(5, t32, t25) # added
                     t45 = Tree(5, t0, t35)
-                    @test probability(pf, runtime, v1, t13) == 1.0
-                    @test probability(pf, runtime, v2, t25) == 1.0
-                    @test probability(pf, runtime, v3, t35) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t13) == 1.0
+                    @test probability(filter, runtime, v2, t25) == 1.0
+                    @test probability(filter, runtime, v3, t35) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
                 
             end
@@ -604,12 +604,12 @@ import Scruff: make_initial, make_transition
                 v1 = m1(:v1)
                 v2 = m2(:v2)
                 net = DynamicNetwork(Variable[v1, v2], VariableGraph(v2 => [v1]), VariableGraph(v2 => [v1]))
-                pf = SyncLoopy()
+                filter = SyncLoopy()
                 runtime = Runtime(net)
-                init_filter(pf, runtime)
-                @test isapprox(probability(pf, runtime, v1, 1), 0.1; atol = 0.05)
+                init_filter(filter, runtime)
+                @test isapprox(probability(filter, runtime, v1, 1), 0.1; atol = 0.05)
                 # Can't currently answer joint probability queries
-                # @test isapprox(probability(pf, runtime, Queryable[v1,v2], x -> x[1] == 1 && x[2] == :a), 0.1 * 0.2; atol = 0.05)
+                # @test isapprox(probability(filter, runtime, Queryable[v1,v2], x -> x[1] == 1 && x[2] == :a), 0.1 * 0.2; atol = 0.05)
             end
 
             @testset "Filter step" begin
@@ -643,23 +643,23 @@ import Scruff: make_initial, make_transition
                     v2 = m2(:v2)
                     vars = Variable[v1, v2]
                     net = DynamicNetwork(vars, VariableGraph(), VariableGraph(v1 => [v1], v2 => [v1]))
-                    pf = SyncLoopy()
+                    filter = SyncLoopy()
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    @test isapprox(probability(pf, runtime, v1, 1), p101; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v1, 2), p102; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :a), p20a; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :b), p20b; atol = 0.05)
-                    filter_step(pf, runtime, vars, 1, Dict{Symbol, Score}(:v2 => HardScore(:a)))
-                    @test isapprox(probability(pf, runtime, v1, 1), post111; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v1, 2), post112; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :a), 1.0; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :b), 0.0; atol = 0.05)
-                    filter_step(pf, runtime, vars, 2, Dict{Symbol, Score}(:v2 => HardScore(:b)))
-                    @test isapprox(probability(pf, runtime, v1, 1), post121; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v1, 2), post122; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :a), 0.0; atol = 0.05)
-                    @test isapprox(probability(pf, runtime, v2, :b), 1.0; atol = 0.05)
+                    init_filter(filter, runtime)
+                    @test isapprox(probability(filter, runtime, v1, 1), p101; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v1, 2), p102; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v2, :a), p20a; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v2, :b), p20b; atol = 0.05)
+                    filter_step(filter, runtime, vars, 1, Dict{Symbol, Score}(:v2 => HardScore(:a)))
+                    @test isapprox(probability(filter, runtime, v1, 1), post111; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v1, 2), post112; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v2, :a), 1.0; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v2, :b), 0.0; atol = 0.05)
+                    filter_step(filter, runtime, vars, 2, Dict{Symbol, Score}(:v2 => HardScore(:b)))
+                    @test isapprox(probability(filter, runtime, v1, 1), post121; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v1, 2), post122; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v2, :a), 0.0; atol = 0.05)
+                    @test isapprox(probability(filter, runtime, v2, :b), 1.0; atol = 0.05)
                 end
             end
         end
@@ -682,54 +682,54 @@ import Scruff: make_initial, make_transition
     
             @testset "Non-coherent Loopy" begin
                 @testset "Order 2-3-4" begin
-                    pf = AsyncLoopy(10, Int)
+                    filter = AsyncLoopy(10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v2], 2, noev)
-                    filter_step(pf, runtime, Variable[v3], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v2], 2, noev)
+                    filter_step(filter, runtime, Variable[v3], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t22 = Tree(2, t0, t0)
                     t33 = Tree(3, t0, t22)
                     t45 = Tree(5, t0, t33)
-                    @test probability(pf, runtime, v1, t0) == 1.0
-                    @test probability(pf, runtime, v2, t22) == 1.0
-                    @test probability(pf, runtime, v3, t33) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t0) == 1.0
+                    @test probability(filter, runtime, v2, t22) == 1.0
+                    @test probability(filter, runtime, v3, t33) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
     
                 @testset "Order 3-2-4" begin
-                    pf = AsyncLoopy(10, Int)
+                    filter = AsyncLoopy(10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v3], 2, noev)
-                    filter_step(pf, runtime, Variable[v2], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v3], 2, noev)
+                    filter_step(filter, runtime, Variable[v2], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t32 = Tree(2, t0, t0)
                     t23 = Tree(3, t0, t0)
                     t45 = Tree(5, t0, t32)
-                    @test probability(pf, runtime, v1, t0) == 1.0
-                    @test probability(pf, runtime, v2, t23) == 1.0
-                    @test probability(pf, runtime, v3, t32) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t0) == 1.0
+                    @test probability(filter, runtime, v2, t23) == 1.0
+                    @test probability(filter, runtime, v3, t32) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
     
                 @testset "Order 3-1-4" begin
-                    pf = AsyncLoopy(10, Int)
+                    filter = AsyncLoopy(10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v3], 2, noev)
-                    filter_step(pf, runtime, Variable[v1], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v3], 2, noev)
+                    filter_step(filter, runtime, Variable[v1], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t32 = Tree(2, t0, t0)
                     t13 = Tree(3, nothing, nothing)
                     t45 = Tree(5, t0, t32)
-                    @test probability(pf, runtime, v1, t13) == 1.0
-                    @test probability(pf, runtime, v2, t0) == 1.0
-                    @test probability(pf, runtime, v3, t32) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t13) == 1.0
+                    @test probability(filter, runtime, v2, t0) == 1.0
+                    @test probability(filter, runtime, v3, t32) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
                 
             end
@@ -737,57 +737,57 @@ import Scruff: make_initial, make_transition
             @testset "Coherent Loopy" begin
                 
                 @testset "Order 2-3-4" begin
-                    pf = CoherentLoopy(10, Int)
+                    filter = CoherentLoopy(10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v2], 2, noev)
-                    filter_step(pf, runtime, Variable[v3], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v2], 2, noev)
+                    filter_step(filter, runtime, Variable[v3], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t22 = Tree(2, t0, t0)
                     t33 = Tree(3, t0, t22)
                     t45 = Tree(5, t0, t33)
-                    @test probability(pf, runtime, v1, t0) == 1.0
-                    @test probability(pf, runtime, v2, t22) == 1.0
-                    @test probability(pf, runtime, v3, t33) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t0) == 1.0
+                    @test probability(filter, runtime, v2, t22) == 1.0
+                    @test probability(filter, runtime, v3, t33) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
     
                 @testset "Order 3-2-4" begin
-                    pf = CoherentLoopy(10, Int)
+                    filter = CoherentLoopy(10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v3], 2, noev)
-                    filter_step(pf, runtime, Variable[v2], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v3], 2, noev)
+                    filter_step(filter, runtime, Variable[v2], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t32 = Tree(2, t0, t0)
                     t23 = Tree(3, t0, t0)
                     t35 = Tree(5, t32, t23) # extra instance added
                     t45 = Tree(5, t0, t35)
-                    @test probability(pf, runtime, v1, t0) == 1.0
-                    @test probability(pf, runtime, v2, t23) == 1.0
-                    @test probability(pf, runtime, v3, t35) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t0) == 1.0
+                    @test probability(filter, runtime, v2, t23) == 1.0
+                    @test probability(filter, runtime, v3, t35) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
     
                 @testset "Order 3-1-4" begin
-                    pf = CoherentLoopy(10, Int)
+                    filter = CoherentLoopy(10, Int)
                     runtime = Runtime(net)
-                    init_filter(pf, runtime)
-                    filter_step(pf, runtime, Variable[v3], 2, noev)
-                    filter_step(pf, runtime, Variable[v1], 3, noev)
-                    filter_step(pf, runtime, Variable[v4], 5, noev)
+                    init_filter(filter, runtime)
+                    filter_step(filter, runtime, Variable[v3], 2, noev)
+                    filter_step(filter, runtime, Variable[v1], 3, noev)
+                    filter_step(filter, runtime, Variable[v4], 5, noev)
                     t0 = Tree(0, nothing, nothing)
                     t32 = Tree(2, t0, t0)
                     t13 = Tree(3, nothing, nothing)
                     t25 = Tree(5, t0, t13) # added
                     t35 = Tree(5, t32, t25) # added
                     t45 = Tree(5, t0, t35)
-                    @test probability(pf, runtime, v1, t13) == 1.0
-                    @test probability(pf, runtime, v2, t25) == 1.0
-                    @test probability(pf, runtime, v3, t35) == 1.0
-                    @test probability(pf, runtime, v4, t45) == 1.0
+                    @test probability(filter, runtime, v1, t13) == 1.0
+                    @test probability(filter, runtime, v2, t25) == 1.0
+                    @test probability(filter, runtime, v3, t35) == 1.0
+                    @test probability(filter, runtime, v4, t45) == 1.0
                 end
                 
             end
@@ -945,26 +945,151 @@ import Scruff: make_initial, make_transition
             @test length(support(bel2, (), 1000, Int[])) <= 2
         end
 
-        @testset "Produces correct beliefs with no limits" begin
+        @testset "Produces correct beliefs with no limits - discrete" begin
+            p101 = 0.1
+            p102 = 0.9
+            p20a = 0.5
+            p20b = 0.5
+            # Observe v21 = :a
+            prior111 = p101 * 0.2 + p102 * 0.3
+            prior112 = p101 * 0.8 + p102 * 0.7
+            q111 = prior111 * 0.4
+            q112 = prior112 * 0.9
+            post111 = q111 / (q111 + q112)
+            post112 = q112 / (q111 + q112)
+            # Observe v22 = :b
+            prior121 = post111 * 0.2 + post112 * 0.3
+            prior122 = post111 * 0.8 + post112 * 0.7
+            q121 = prior121 * 0.6
+            q122 = prior122 * 0.1
+            post121 = q121 / (q121 + q122)
+            post122 = q122 / (q121 + q122)
+
+            c1 = Cat([1,2], [0.1, 0.9])
+            d1 = DiscreteCPT([1, :2], Dict((1,) => [0.2, 0.8], (2,) => [0.3, 0.7]))
+            c2 = Cat([:a,:b], [0.5, 0.5])
+            d2 = DiscreteCPT([:a, :b], Dict((1,) => [0.4, 0.6], (2,) => [0.9, 0.1]))
+            m1 = HomogeneousModel(c1, d1)
+            m2 = HomogeneousModel(c2, d2)
+            v1 = m1(:v1)
+            v2 = m2(:v2)
+            vars = Variable[v1, v2]
+            net = DynamicNetwork(vars, VariableGraph(), VariableGraph(v1 => [v1], v2 => [v1]))
+            filter = RangeLimited(SyncBP(), Dict{Symbol, Score}())
+            runtime = Runtime(net)
+            init_filter(filter, runtime)
+            @test isapprox(probability(filter, runtime, v1, 1), p101, atol = 0.05)
+            @test isapprox(probability(filter, runtime, v1, 2), p102, atol = 0.05)
+            @test isapprox(probability(filter, runtime, v2, :a), p20a, atol = 0.05)
+            @test isapprox(probability(filter, runtime, v2, :b), p20b, atol = 0.05)
+            filter_step(filter, runtime, vars, 1, Dict{Symbol, Score}(:v2 => HardScore(:a)))
+            @test isapprox(probability(filter, runtime, v1, 1), post111, atol = 0.05)
+            @test isapprox(probability(filter, runtime, v1, 2), post112, atol = 0.05)
+            @test isapprox(probability(filter, runtime, v2, :a), 1.0, atol = 0.05)
+            @test isapprox(probability(filter, runtime, v2, :b), 0.0, atol = 0.05)
+            filter_step(filter, runtime, vars, 2, Dict{Symbol, Score}(:v2 => HardScore(:b)))
+            @test isapprox(probability(filter, runtime, v1, 1), post121, atol = 0.05)
+            @test isapprox(probability(filter, runtime, v1, 2), post122, atol = 0.05)
+            @test isapprox(probability(filter, runtime, v2, :a), 0.0, atol = 0.05)
+            @test isapprox(probability(filter, runtime, v2, :b), 1.0, atol = 0.05)
 
         end
 
-        @testset "Produces approximately correct beliefs with limits" begin
-
+        @testset "Produces correct beliefs with no limits - continuous" begin
+            norm = Normal(0.0, 1.0)
+            lg = LinearGaussian((1.0,), 2.0, 1.0)
+            v = HomogeneousModel(norm, lg)(:v)
+            net = DynamicNetwork([v], VariableGraph(), VariableGraph(v => [v]))
+            # Although it is difficult to compute the exact target result, we can compare to the non-range limited version and make sure it is similar
+            filter1 = SyncBP()
+            filter2 = RangeLimited(SyncBP(), Dict{Symbol, Int}())
+            runtime1 = Runtime(net)
+            init_filter(filter1, runtime1)
+            runtime2 = Runtime(net)
+            init_filter(filter2, runtime2)
+            @test isapprox(mean(filter2, runtime2, v), mean(filter1, runtime1, v)) # These should produce essentially the same result, so no atol
+            filter_step(filter1, runtime1, [v], 1, Dict{Symbol, Score}())
+            filter_step(filter2, runtime2, [v], 1, Dict{Symbol, Score}())
+            @test isapprox(mean(filter2, runtime2, v), mean(filter1, runtime1, v)) 
+            filter_step(filter1, runtime1, [v], 2, Dict{Symbol, Score}())
+            filter_step(filter2, runtime2, [v], 2, Dict{Symbol, Score}())
+            @test isapprox(mean(filter2, runtime2, v), mean(filter1, runtime1, v)) 
         end
 
-        @testset "Works with PF" begin
-            
+        @testset "Produces approximately correct beliefs with limits - continuous" begin
+            norm = Normal(0.0, 1.0)
+            lg = LinearGaussian((1.0,), 2.0, 1.0)
+            v = HomogeneousModel(norm, lg)(:v)
+            net = DynamicNetwork([v], VariableGraph(), VariableGraph(v => [v]))
+            # Although it is difficult to compute the exact target result, we can compare to the non-range limited version and make sure it is similar
+            filter1 = SyncBP()
+            filter2 = RangeLimited(SyncBP(), Dict{Symbol, Int}(:v => 10))
+            runtime1 = Runtime(net)
+            init_filter(filter1, runtime1)
+            runtime2 = Runtime(net)
+            init_filter(filter2, runtime2)
+            @test isapprox(mean(filter2, runtime2, v), mean(filter1, runtime1, v), atol = 0.5) # Now these are only approximately the same
+            filter_step(filter1, runtime1, [v], 1, Dict{Symbol, Score}()) # With only 5 values, this is a reasonable error if it is consistently adhered to
+            filter_step(filter2, runtime2, [v], 1, Dict{Symbol, Score}())
+            @test isapprox(mean(filter2, runtime2, v), mean(filter1, runtime1, v), atol = 0.5) 
+            filter_step(filter1, runtime1, [v], 2, Dict{Symbol, Score}())
+            filter_step(filter2, runtime2, [v], 2, Dict{Symbol, Score}())
+            @test isapprox(mean(filter2, runtime2, v), mean(filter1, runtime1, v), atol = 0.5) 
         end
 
         @testset "Works with Async" begin
+            cat1 = Cat([1,2,3,4], [0.1, 0.2, 0.3, 0.4])
+            cat2 = Cat([6,7,8], [0.2, 0.3, 0.5])
+            struct ThisVTM1 <: VariableTimeModel{Tuple{}, Tuple{Int}, Int} end
+            struct ThisVTM2 <: VariableTimeModel{Tuple{}, Tuple{Int}, Int} end
+            make_initial(::ThisVTM1, empty) = cat1 
+            make_transition(::ThisVTM1, prev, t) = Constant{Int}(prev[1] + floor(t))
+            make_initial(::ThisVTM2, empty) = cat2 
+            make_transition(::ThisVTM2, prev, t) = Constant{Int}(prev[1] * floor(t))
+            v1 = Variable(:v1, ThisVTM1())
+            v2 = Variable(:v2, ThisVTM2())
+            net = DynamicNetwork([v1, v2], VariableGraph(), VariableGraph(v1 => [v1], v2 => [v2]))
 
+            limits = Dict{Symbol, Integer}(:v1 => 3, :v2 => 2)
+            filter = RangeLimited(AsyncBP(1000000, Float64), limits) # We're limiting the range, so we don't give any suggestion to generating the range in the first place
+            variables = [v1, v2]
+            runtime = Runtime(net, 0.0)
+            init_filter(filter, runtime)
+            filter_step(filter, runtime, Variable[v1], 1.0, Dict{Symbol, Score}()) 
+            filter_step(filter, runtime, Variable[v2], 3.5, Dict{Symbol, Score}()) 
+
+            # Test appropriate limiting
+            instance1 = current_instance(runtime, v1)
+            bel1 = get_belief(runtime, instance1)
+            @test length(support(bel1, (), 1000, Int[])) <= 3
+            instance2 = current_instance(runtime, v2)
+            bel2 = get_belief(runtime, instance2)
+            @test length(support(bel2, (), 1000, Int[])) <= 2
         end
 
-        @testset "Run for many timesteps with continuous model without running out of mempory" begin
+        # @testset "Run for many timesteps with continuous model without running out of mempory" begin
+        #     norm = Normal(0.0, 1.0)
+        #     lg = LinearGaussian((1.0,), 2.0, 1.0)
+        #     v = HomogeneousModel(norm, lg)(:v)
+        #     net = DynamicNetwork([v], VariableGraph(), VariableGraph(v => [v]))
+        #     num_iterations = 7000 # Choose num_iterations to cause range_unlimited to take a long time
+        #     # range_limited = false # Choose one of these two
+        #     range_limited = true
+
+        #     if !range_limited 
+        #         filter = SyncBP()
+        #     else
+        #         filter = RangeLimited(SyncBP(), Dict(:v => 5))
+        #     end
             
-        end
+        #     runtime = Runtime(net)
+        #     init_filter(filter, runtime)
+        #     for i in 1:num_iterations
+        #         filter_step(filter, runtime, [v], i, Dict{Symbol, Score}())
+        #     end
 
+        #     println(num_iterations)
+        # end
     end
   
 

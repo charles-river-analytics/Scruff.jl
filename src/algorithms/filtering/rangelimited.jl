@@ -2,7 +2,7 @@ export
     RangeLimited,
     limit_and_set_beliefs!
 
-mutable struct RangeLimited
+mutable struct RangeLimited <: Filter
     inner_filter :: Filter
     limits :: Dict{Symbol, Integer}
 end
@@ -38,9 +38,28 @@ function set_range_and_belief!(runtime, network, node, ranges, limits, timetype)
 end
 
 function set_range_and_belief_limited!(runtime, instance, name, ranges, limit)
-    belief = get_belief(runtime, instance)
-    samples = limited_support(belief, (), limit)
-    ranges[name] = samples 
-    new_belief = Cat(samples, [1.0 / length(samples) for s in samples])
-    post_belief!(runtime, instance, new_belief)
+    if has_belief(runtime, instance)
+        belief = get_belief(runtime, instance)
+        samples = limited_support(belief, (), limit)
+        ranges[name] = samples 
+        new_belief = Cat(samples, [1.0 / length(samples) for s in samples])
+        post_belief!(runtime, instance, new_belief)
+    end
+end
+
+function answer(q::Query, rl::RangeLimited, r::Runtime, i::VariableInstance)
+    is = VariableInstance[i]
+    answer(q, rl.inner_filter, r, is)
+end
+
+function probability(rl::RangeLimited, runtime::Runtime, item::Queryable, predicate::Function)
+    probability(rl.inner_filter, runtime, item, predicate)
+end
+
+function probability(rl::RangeLimited, runtime::Runtime, item::Queryable{O}, value::O) where O
+    probability(rl.inner_filter, runtime, item, value)
+end
+
+function expectation(rl::RangeLimited, run::Runtime, item::Queryable, fn::Function)::Float64
+    expectation(rl.inner_filter, run, item, fn)
 end
