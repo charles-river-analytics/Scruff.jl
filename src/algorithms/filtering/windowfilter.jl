@@ -46,13 +46,18 @@ function _store_beliefs(wf::WindowFilter, dynrun::DynamicRuntime{T}, instrun::In
     end
 end
 
-function create_instant_runtime(wf, dynrun::DynamicRuntime{T}, variables, time::T) where T
-    insts = create_window(wf.window_creator, dynrun, variables, time)
+function create_instant_runtime(wf, dynrun::DynamicRuntime{T}, variables, t::T) where T
+    time1 = time()
+    insts = create_window(wf.window_creator, dynrun, variables, t)
+    time2 = time()
     for inst in insts
         node = get_node(inst)
-        ensure_instance!(dynrun, node, time)
+        ensure_instance!(dynrun, node, t)
     end
-    instant_runtime_from_instances(dynrun, insts)
+    time3 = time()
+    runtime = instant_runtime_from_instances(dynrun, insts)
+    time4 = time()
+    runtime
 end
 
 function compile_evidence(time, evidence)
@@ -99,12 +104,20 @@ function restore_dynamic_runtime(wf, dynrun, instrun, time)
     _store_beliefs(wf, dynrun, instrun)
 end
 
-function filter_step(wf::WindowFilter, dynrun::DynamicRuntime{T}, variables::Vector{<:Variable}, time::T, evidence::Dict{Symbol, Score}) where T
-    instrun = create_instant_runtime(wf, dynrun, variables, time)
+function filter_step(wf::WindowFilter, dynrun::DynamicRuntime{T}, variables::Vector{<:Variable}, t::T, evidence::Dict{Symbol, Score}) where T
+    time1 = time()
 
-    infer_with_instant_runtime(wf, dynrun, instrun, time, evidence)
+    instrun = create_instant_runtime(wf, dynrun, variables, t)
 
-    restore_dynamic_runtime(wf, dynrun, instrun, time)
+    time2 = time()
+
+    infer_with_instant_runtime(wf, dynrun, instrun, t, evidence)
+
+    time3 = time()
+
+    restore_dynamic_runtime(wf, dynrun, instrun, t)
+
+    time4 = time()
 end
 
 function answer(::Marginal, ::WindowFilter, dynrun::Runtime, target::VariableInstance) 

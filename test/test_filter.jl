@@ -1,4 +1,5 @@
 using Test
+# using Profile, ProfileView, Gtk4
 
 using Scruff
 using Scruff.Utils
@@ -179,7 +180,6 @@ import Scruff: make_initial, make_transition
         end
         
     end 
-
        
     @testset "Particle filter" begin
         
@@ -249,6 +249,7 @@ import Scruff: make_initial, make_transition
                 @test isapprox(probability(filter, runtime, v2, :a), 0.0; atol = 0.05)
                 @test isapprox(probability(filter, runtime, v2, :b), 1.0; atol = 0.05)
             end
+            
         end
 
         @testset "Asynchronous PF" begin
@@ -1067,28 +1068,36 @@ import Scruff: make_initial, make_transition
             @test length(support(bel2, (), 1000, Int[])) <= 2
         end
 
-        # @testset "Run for many timesteps with continuous model without running out of mempory" begin
+        # @testset "Profiling filtering algorithms" begin
         #     norm = Normal(0.0, 1.0)
-        #     lg = LinearGaussian((1.0,), 2.0, 1.0)
-        #     v = HomogeneousModel(norm, lg)(:v)
-        #     net = DynamicNetwork([v], VariableGraph(), VariableGraph(v => [v]))
-        #     num_iterations = 7000 # Choose num_iterations to cause range_unlimited to take a long time
-        #     # range_limited = false # Choose one of these two
-        #     range_limited = true
-
-        #     if !range_limited 
-        #         filter = SyncBP()
-        #     else
-        #         filter = RangeLimited(SyncBP(), Dict(:v => 5))
+        #     function tf(tup::Tuple{Float64})
+        #         x = tup[1]
+        #         d = Dict(x - 1.0 => 0.5, x * 1.01 => 0.5)
+        #         Cat(d)
         #     end
+        #     trans = Chain(Tuple{Float64}, Float64, tf)
+        #     v = HomogeneousModel(norm, trans)(:v)
+        #     net = DynamicNetwork([v], VariableGraph(), VariableGraph(v => [v]))
+        #     num_iterations = 10000 # Choose num_iterations to cause range_unlimited to take a long time
+        #     interval = 100
+
+        #     # Choose 1
+        #     filter = SyncBP()
+        #     # filter = SyncPF(1000)
+        #     # filter = RangeLimited(SyncBP(), Dict(:v => 5))
             
         #     runtime = Runtime(net)
         #     init_filter(filter, runtime)
+        #     time1 = time()
         #     for i in 1:num_iterations
         #         filter_step(filter, runtime, [v], i, Dict{Symbol, Score}())
+        #         if i % interval == 0
+        #             # println("\nIteration", i) 
+        #             time2 = time()
+        #             # println("Time of last ", interval, " iterations:", time2 - time1)
+        #             time1 = time2
+        #         end
         #     end
-
-        #     println(num_iterations)
         # end
     end
   

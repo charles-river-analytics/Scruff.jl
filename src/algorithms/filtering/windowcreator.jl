@@ -25,8 +25,8 @@ struct SyncWindow <: WindowCreator{Int} end
 Creates a window by instantiating all variables at all intermediate time steps from the earliest parent to the given time.
 The `variables` argument is ignored.
 """
-function create_window(::SyncWindow, runtime::Runtime, variables_to_sample::Vector{<:Variable}, time::Int)::Vector{Instance} 
-    previous_time = time
+function create_window(::SyncWindow, runtime::Runtime, variables_to_sample::Vector{<:Variable}, t::Int)::Vector{Instance} 
+    previous_time = t
     net = get_network(runtime)
     order = topsort(get_transition_graph(net))
 
@@ -37,12 +37,13 @@ function create_window(::SyncWindow, runtime::Runtime, variables_to_sample::Vect
                 time_offset = has_timeoffset(net, node, parent)
                 # time_offset = true
                 # Assuming init_filter has been called, previous_instance should exist
-                previous_instance = latest_instance_before(runtime, parent, time, !time_offset)
-                if isnothing(previous_instance)
-                    placeholder = Placeholder{output_type(parent)}(get_name(parent))
-                    previous_instance = latest_instance_before(runtime, placeholder, time, !time_offset)
-                end
-                # previous_instance = get_instance(runtime, parent, time)
+                previous_instance = latest_instance_before(runtime, parent, t, !time_offset)
+                # if isnothing(previous_instance)
+                #     println("Previous instance did not exist")
+                #     placeholder = Placeholder{output_type(parent)}(get_name(parent))
+                #     previous_instance = latest_instance_before(runtime, placeholder, t, !time_offset)
+                #     println("Previous instance is now ", previous_instance)
+                # end
                 previous_instances[get_name(previous_instance)] = previous_instance
             end
         end
@@ -50,9 +51,9 @@ function create_window(::SyncWindow, runtime::Runtime, variables_to_sample::Vect
     end
 
     previous_instances = get_previous_instances()
-    previous_time = time
+    previous_t = t
     for inst in values(previous_instances)
-        previous_time = min(previous_time, get_time(inst))
+        previous_t = min(previous_t, get_time(inst))
     end
 
     #   function get_window_start_time()
@@ -65,44 +66,47 @@ function create_window(::SyncWindow, runtime::Runtime, variables_to_sample::Vect
     # end
 
     # previous_time = get_window_start_time()
-
     function create_placeholders()
         placeholders = Dict{Symbol, Instance}()
         for node in order
             name = get_name(node)
-            placeholder = Placeholder{output_type(node)}(name)
-            if has_instance(runtime, node, previous_time)
-                remove_instance!(runtime, node, previous_time) # We must replace the variable with the placeholder, otherwise we run into problems
-                # Careful: We must make sure placeholders can be used where variables are expected
+            # We only make a placeholder for nodes that are actually parents of a node.
+            if name in keys(previous_instances)
+                placeholder = Placeholder{output_type(node)}(name)
+                # if has_instance(runtime, node, previous_t)
+                #     println("REMOVING ", get_name(node))
+                #     remove_instance!(runtime, node, previous_t) # We must replace the variable with the placeholder, otherwise we run into problems
+                #     # Careful: We must make sure placeholders can be used where variables are expected
 
+                # end
+                new_instance = instantiate!(runtime, placeholder, previous_t)
+                placeholders[name] = new_instance
             end
-            new_instance = instantiate!(runtime, placeholder, previous_time)
-            placeholders[name] = new_instance
         end
         placeholders
     end
 
     new_instances_dict = create_placeholders()
     all_instances = collect(values(new_instances_dict))
-
     function copy_values_into_placeholders()
-        for ((previous_instance, value_name), value) in runtime.values
-            name = get_name(previous_instance)
-            # previous_instance = previous_instances[name]
+        for name in keys(new_instances_dict)
             new_instance = new_instances_dict[name]
-            set_value!(runtime, new_instance, value_name, value)
+            previous_instance = previous_instances[name]
+            for (key, value) in get_all_values(runtime, previous_instance)
+                set_value!(runtime, new_instance, key, value)
+            end
         end
     end
 
     copy_values_into_placeholders()
-        
+
     function fill_in_gaps()
-        for t in previous_time+1:time
+        for i in previous_t+1:t
             for node in order
-                if !has_instance(runtime, node, t)
-                    push!(all_instances, ensure_instance!(runtime, node, t))
+                if !has_instance(runtime, node, i)
+                    push!(all_instances, ensure_instance!(runtime, node, i))
                 else
-                    push!(all_instances, get_instance(runtime, node, t))
+                    push!(all_instances, get_instance(runtime, node, i))
                 end
             end
         end

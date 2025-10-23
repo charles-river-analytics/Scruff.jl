@@ -1,0 +1,5 @@
+[deps]
+Gtk4 = "9db2cae5-386f-4011-9d63-a5602296539b"
+ProfileView = "c46f51b8-102a-5cf2-8d2c-8597cb0e0da7"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+Scruff = "6c98c146-7a27-4df0-99b1-e6e7c9a81876"

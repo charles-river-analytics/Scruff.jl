@@ -24,6 +24,7 @@ export
     get_state,
     get_time,
     get_value,
+    get_all_values,
     get_node,
     has_belief,
     has_evidence,
@@ -208,6 +209,7 @@ struct InstantRuntime <: Runtime
     network :: InstantNetwork
     instances :: Dict{Node, Instance}
     values :: Dict{Tuple{Instance, Symbol}, Any}
+    values_per_instance :: Dict{Instance, Dict{Symbol, Any}} # Secondary index to make retrieving all values efficient
     messages :: Dict{Tuple{Node, Symbol}, Dict{Node, Any}}
 end
 
@@ -223,6 +225,7 @@ struct DynamicRuntime{T} <: Runtime
     instances :: Dict{Node, 
         SortedDict{T, Instance, Base.Order.ReverseOrdering}}
     values :: Dict{Tuple{Instance, Symbol}, Any}
+    values_per_instance :: Dict{Instance, Dict{Symbol, Any}} # Secondary index to make retrieving all values efficient
     messages :: Dict{Tuple{Node, Symbol}, Dict{Node, Any}}
 end
 
@@ -230,10 +233,10 @@ end
 Runtime() = InstantRuntime(InstantNetwork(Variable[], Placeholder[], Placeholder[], 
     VariableGraph()))
 Runtime(net :: InstantNetwork) = InstantRuntime(Env(), gensym(), net, 
-    Dict(), Dict(), Dict())
+    Dict(), Dict(), Dict(), Dict())
 Runtime(net :: DynamicNetwork) = Runtime(net, 0)
 function Runtime(net :: DynamicNetwork, time::T) where {T} 
-    rt = DynamicRuntime{T}(Env(), gensym(), net, Dict(), Dict(), Dict())
+    rt = DynamicRuntime{T}(Env(), gensym(), net, Dict(), Dict(), Dict(), Dict())
     set_time!(rt, time)
     return rt
 end
@@ -531,6 +534,10 @@ Set the value on an instance for the given key
 """
 function set_value!(runtime::Runtime, instance::Instance, key::Symbol, value)
     runtime.values[(instance, key)] = value
+    if !(instance in keys(runtime.values_per_instance))
+        runtime.values_per_instance[instance] = Dict()
+    end
+    runtime.values_per_instance[instance][key] = value
 end
 
 """
@@ -540,9 +547,19 @@ Get the value on an instance for the given key; this will throw an exception
 if the instance does not contain the given key
 """
 function get_value(runtime::Runtime, instance::Instance, key::Symbol)
-    result = runtime.values[(instance, key)]
-    return result
+    runtime.values[(instance, key)]
 end
+
+"""
+    get_all_values(runtime::Runtime, instance::Instance)
+
+Get all values on an instance for all keys, returned as a Dict{Symbol, Any}.
+O(1) performance in the number of instances.
+"""
+function get_all_values(runtime::Runtime, instance::Instance)
+    runtime.values_per_instance[instance]
+end
+
 
 """
     delete_value!(runtime::Runtime{T}, instance::Instance, key::Symbol) where {T}
@@ -550,6 +567,9 @@ end
 Deletes the mapping for the given instance and key in the runtime and returns it
 """
 function delete_value!(runtime::Runtime, instance::Instance, key::Symbol)
+    if instance in keys(runtime.values_per_instance)
+        pop!(runtime.values_per_instance[instance], key)
+    end
     return pop!(runtime.values, (instance, key), nothing)
 end
 
