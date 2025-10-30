@@ -47,17 +47,14 @@ function _store_beliefs(wf::WindowFilter, dynrun::DynamicRuntime{T}, instrun::In
 end
 
 function create_instant_runtime(wf, dynrun::DynamicRuntime{T}, variables, t::T) where T
-    time1 = time()
     insts = create_window(wf.window_creator, dynrun, variables, t)
-    time2 = time()
+
     for inst in insts
         node = get_node(inst)
         ensure_instance!(dynrun, node, t)
     end
-    time3 = time()
-    runtime = instant_runtime_from_instances(dynrun, insts)
-    time4 = time()
-    runtime
+    
+    instant_runtime_from_instances(dynrun, insts)
 end
 
 function compile_evidence(time, evidence)
@@ -109,15 +106,9 @@ function filter_step(wf::WindowFilter, dynrun::DynamicRuntime{T}, variables::Vec
 
     instrun = create_instant_runtime(wf, dynrun, variables, t)
 
-    time2 = time()
-
     infer_with_instant_runtime(wf, dynrun, instrun, t, evidence)
 
-    time3 = time()
-
     restore_dynamic_runtime(wf, dynrun, instrun, t)
-
-    time4 = time()
 end
 
 function answer(::Marginal, ::WindowFilter, dynrun::Runtime, target::VariableInstance) 

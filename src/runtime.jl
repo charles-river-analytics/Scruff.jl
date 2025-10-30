@@ -557,7 +557,7 @@ Get all values on an instance for all keys, returned as a Dict{Symbol, Any}.
 O(1) performance in the number of instances.
 """
 function get_all_values(runtime::Runtime, instance::Instance)
-    runtime.values_per_instance[instance]
+    instance in keys(runtime.values_per_instance) ? runtime.values_per_instance[instance] : Dict()
 end
 
 

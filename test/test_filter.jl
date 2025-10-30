@@ -1068,38 +1068,40 @@ import Scruff: make_initial, make_transition
             @test length(support(bel2, (), 1000, Int[])) <= 2
         end
 
-        # @testset "Profiling filtering algorithms" begin
-        #     norm = Normal(0.0, 1.0)
-        #     function tf(tup::Tuple{Float64})
-        #         x = tup[1]
-        #         d = Dict(x - 1.0 => 0.5, x * 1.01 => 0.5)
-        #         Cat(d)
-        #     end
-        #     trans = Chain(Tuple{Float64}, Float64, tf)
-        #     v = HomogeneousModel(norm, trans)(:v)
-        #     net = DynamicNetwork([v], VariableGraph(), VariableGraph(v => [v]))
-        #     num_iterations = 10000 # Choose num_iterations to cause range_unlimited to take a long time
-        #     interval = 100
+    #=
+    @testset "Profiling filtering algorithms" begin
+            norm = Normal(0.0, 1.0)
+            function tf(tup::Tuple{Float64})
+                x = tup[1]
+                d = Dict(x - 1.0 => 0.5, x * 1.01 => 0.5)
+                Cat(d)
+            end
+            trans = Chain(Tuple{Float64}, Float64, tf)
+            v = HomogeneousModel(norm, trans)(:v)
+            net = DynamicNetwork([v], VariableGraph(), VariableGraph(v => [v]))
+            num_iterations = 100000 # Choose num_iterations to cause range_unlimited to take a long time
+            interval = 1000
 
-        #     # Choose 1
-        #     filter = SyncBP()
-        #     # filter = SyncPF(1000)
-        #     # filter = RangeLimited(SyncBP(), Dict(:v => 5))
+            # Choose 1
+            filter = SyncBP()
+            # filter = SyncPF(1000)
+            # filter = RangeLimited(SyncBP(), Dict(:v => 5))
             
-        #     runtime = Runtime(net)
-        #     init_filter(filter, runtime)
-        #     time1 = time()
-        #     for i in 1:num_iterations
-        #         filter_step(filter, runtime, [v], i, Dict{Symbol, Score}())
-        #         if i % interval == 0
-        #             # println("\nIteration", i) 
-        #             time2 = time()
-        #             # println("Time of last ", interval, " iterations:", time2 - time1)
-        #             time1 = time2
-        #         end
-        #     end
-        # end
+            runtime = Runtime(net)
+            init_filter(filter, runtime)
+            time1 = time()
+            for i in 1:num_iterations
+                filter_step(filter, runtime, [v], i, Dict{Symbol, Score}())
+                if i % interval == 0
+                    # println("\nIteration", i) 
+                    time2 = time()
+                    # println("Time of last ", interval, " iterations:", time2 - time1)
+                    time1 = time2
+                end
+            end
+        end
+    =#
     end
-  
+
 
 end

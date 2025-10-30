@@ -124,9 +124,16 @@ function instant_runtime_from_instances(dynrun::DynamicRuntime{T}, dyninsts::Vec
         end
     end
 
-    for ((dyninst, valuename), value) in dynrun.values
-        if dyninst in dyninsts
-            instinst = current_instance(instrun, forward_index[instant_name(get_name(dyninst), get_time(dyninst))])
+    # for ((dyninst, valuename), value) in dynrun.values
+        # if dyninst in dyninsts
+            # instinst = current_instance(instrun, forward_index[instant_name(get_name(dyninst), get_time(dyninst))])
+            # set_value!(instrun, instinst, valuename, value)
+        # end
+    # end
+    for dyninst in dyninsts
+        instinst = current_instance(instrun, forward_index[instant_name(get_name(dyninst), get_time(dyninst))])
+        values_dict = get_all_values(dynrun, dyninst)
+        for (valuename, value) in values_dict
             set_value!(instrun, instinst, valuename, value)
         end
     end
@@ -135,7 +142,7 @@ function instant_runtime_from_instances(dynrun::DynamicRuntime{T}, dyninsts::Vec
         set_state!(instrun, k, v)
     end
 
-    return instrun
+    instrun
 end
 
 """
