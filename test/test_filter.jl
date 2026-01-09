@@ -1,4 +1,5 @@
 using Test
+using Random
 # using Profile, ProfileView, Gtk4
 
 using Scruff
@@ -180,7 +181,335 @@ import Scruff: make_initial, make_transition
         end
         
     end 
-       
+ 
+    @testset "Restarting a filter" begin
+        c = Cat([1,2], [0.1, 0.9])
+        d = DiscreteCPT([:a, :b], Dict((1,) => [0.2, 0.8], (2,) => [0.3, 0.7]))
+        m1 = HomogeneousModel(c, c)
+        m2 = HomogeneousModel(d, d)
+        v1 = m1(:v1)
+        v2 = m2(:v2)
+        vars = Variable[v1, v2]
+        no_evidence = Dict{Symbol, Score}()
+        network = DynamicNetwork(vars, VariableGraph(v2 => [v1]), VariableGraph(v2 => [v1]))
+
+        @testset "Given an uninitialized filter" begin
+            filter = SyncBP(1000)
+    
+            @testset "Should throw an exception" begin
+                runtime = Runtime(network, 0)
+                @test_throws ErrorException restart_from_now(filter, runtime, network)
+            end
+        end
+
+        @testset "Given an initialized BP filter" begin
+            filter = SyncBP(1000)
+    
+            @testset "all instances should be present" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                new_runtime = restart_from_now(filter, runtime, network)
+                @test has_instance(new_runtime, v1)
+                @test has_instance(new_runtime, v2)
+            end
+
+            @testset "current time should  be 0" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                new_runtime = restart_from_now(filter, runtime, network)
+                @test current_time(new_runtime) == 0
+            end
+
+            @testset "distribution should be same as existing filter" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                new_runtime = restart_from_now(filter, runtime, network)
+                inst1 = current_instance(runtime, v1)
+                inst2 = current_instance(runtime, v2)
+                new_inst1 = current_instance(new_runtime, v1)
+                new_inst2 = current_instance(new_runtime, v2)
+                bel1 = get_belief(runtime, inst1)
+                bel2 = get_belief(runtime, inst2)
+                new_bel1 = get_belief(new_runtime, inst1)
+                new_bel2 = get_belief(new_runtime, inst2)
+                @test new_bel1.original_range == bel1.original_range
+                @test new_bel2.original_range == bel2.original_range
+                @test new_bel1.params == bel1.params
+                @test new_bel2.params == bel2.params
+            end
+
+            @testset "prediction should be same as original filter going forward with no evidence" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                new_runtime = restart_from_now(filter, runtime, network)
+                filter_step(filter, runtime, vars, 1, no_evidence)
+                filter_step(filter, new_runtime, vars, 1, no_evidence)
+                inst1 = current_instance(runtime, v1)
+                inst2 = current_instance(runtime, v2)
+                new_inst1 = current_instance(new_runtime, v1)
+                new_inst2 = current_instance(new_runtime, v2)
+                bel1 = get_belief(runtime, inst1)
+                bel2 = get_belief(runtime, inst2)
+                new_bel1 = get_belief(new_runtime, inst1)
+                new_bel2 = get_belief(new_runtime, inst2)
+                @test new_bel1.original_range == bel1.original_range
+                @test new_bel2.original_range == bel2.original_range
+                @test new_bel1.params == bel1.params
+                @test new_bel2.params == bel2.params
+            end
+
+            @testset "prediction should be different from original filter when only original filter has evidence" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                new_runtime = restart_from_now(filter, runtime, network)
+                filter_step(filter, runtime, vars, 1, Dict{Symbol, Score}(:v2 => HardScore(:b)))
+                filter_step(filter, new_runtime, vars, 1, no_evidence)
+                inst1 = current_instance(runtime, v1)
+                inst2 = current_instance(runtime, v2)
+                new_inst1 = current_instance(new_runtime, v1)
+                new_inst2 = current_instance(new_runtime, v2)
+                bel1 = get_belief(runtime, inst1)
+                bel2 = get_belief(runtime, inst2)
+                new_bel1 = get_belief(new_runtime, inst1)
+                new_bel2 = get_belief(new_runtime, inst2)
+                @test new_bel1.original_range == bel1.original_range
+                @test new_bel2.original_range == bel2.original_range
+                @test new_bel1.params != bel1.params
+                @test new_bel2.params != bel2.params
+            end
+
+            @testset "prediction should be different from original filter when only new filter has evidence" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                new_runtime = restart_from_now(filter, runtime, network)
+                filter_step(filter, runtime, vars, 1, no_evidence)
+                filter_step(filter, new_runtime, vars, 1, Dict{Symbol, Score}(:v2 => HardScore(:b)))
+                inst1 = current_instance(runtime, v1)
+                inst2 = current_instance(runtime, v2)
+                new_inst1 = current_instance(new_runtime, v1)
+                new_inst2 = current_instance(new_runtime, v2)
+                bel1 = get_belief(runtime, inst1)
+                bel2 = get_belief(runtime, inst2)
+                new_bel1 = get_belief(new_runtime, inst1)
+                new_bel2 = get_belief(new_runtime, inst2)
+                @test new_bel1.original_range == bel1.original_range
+                @test new_bel2.original_range == bel2.original_range
+                @test new_bel1.params != bel1.params
+                @test new_bel2.params != bel2.params
+            end
+        end
+
+        @testset "Given an initialized particle filter" begin
+            filter = SyncPF(1000)
+    
+            @testset "all instances should be present" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                new_runtime = restart_from_now(filter, runtime, network)
+                @test has_instance(new_runtime, v1)
+                @test has_instance(new_runtime, v2)
+            end
+
+            @testset "current time should be 0" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                new_runtime = restart_from_now(filter, runtime, network)
+                @test current_time(new_runtime) == 0
+            end
+
+            @testset "distribution should be same as existing filter" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                new_runtime = restart_from_now(filter, runtime, network)
+                parts = get_state(runtime, :particles)
+                new_parts = get_state(new_runtime, :particles)
+                @test new_parts == parts
+            end
+
+            @testset "prediction should be same as original filter going forward with no evidence and the same seed" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                new_runtime = restart_from_now(filter, runtime, network)
+                Random.seed!(42)
+                filter_step(filter, runtime, vars, 1, no_evidence)
+                Random.seed!(42)
+                filter_step(filter, new_runtime, vars, 1, no_evidence)
+                parts = get_state(runtime, :particles)
+                new_parts = get_state(new_runtime, :particles)
+                @test new_parts.samples == parts.samples
+                @test new_parts.log_weights == parts.log_weights
+            end
+
+            @testset "prediction should be different from original filter going forward with no evidence and different seeds" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                new_runtime = restart_from_now(filter, runtime, network)
+                Random.seed!(42)
+                filter_step(filter, runtime, vars, 1, no_evidence)
+                Random.seed!(43)
+                filter_step(filter, new_runtime, vars, 1, no_evidence)
+                parts = get_state(runtime, :particles)
+                new_parts = get_state(new_runtime, :particles)
+                @test new_parts.samples != parts.samples || new_parts.log_weights != parts.log_weights
+            end
+        end
+
+        @testset "Given a SyncBP filter with two filter steps" begin
+            filter = SyncBP(1000)
+    
+            @testset "current time should be 2" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, vars, 1, no_evidence)
+                filter_step(filter, runtime, vars, 2, no_evidence)
+                new_runtime = restart_from_now(filter, runtime, network)
+                @test current_time(new_runtime) == 2
+            end
+
+            @testset "all instances at time 2 should be present" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, vars, 1, no_evidence)
+                filter_step(filter, runtime, vars, 2, no_evidence)
+                new_runtime = restart_from_now(filter, runtime, network)
+                @test has_instance(new_runtime, v1, 2)
+                @test has_instance(new_runtime, v2, 2)
+            end
+
+            @testset "no older instances should be present" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, vars, 1, no_evidence)
+                filter_step(filter, runtime, vars, 2, no_evidence)
+                new_runtime = restart_from_now(filter, runtime, network)
+                @test !has_instance(new_runtime, v1, 1)
+                @test !has_instance(new_runtime, v2, 1)
+                @test !has_instance(new_runtime, v1, 0)
+                @test !has_instance(new_runtime, v2, 0)
+            end
+
+            @testset "all values on current instances should be copied" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, vars, 1, no_evidence)
+                filter_step(filter, runtime, vars, 2, no_evidence)
+                new_runtime = restart_from_now(filter, runtime, network)
+                cinst = current_instance(runtime, v1)
+                dinst = current_instance(runtime, v2)
+                cbel = get_belief(runtime, cinst)
+                dbel = get_belief(runtime, dinst)
+                new_cinst = current_instance(runtime, v1)
+                new_dinst = current_instance(runtime, v2)
+                new_cbel = get_belief(runtime, new_cinst)
+                new_dbel = get_belief(runtime, new_dinst)
+                @test new_cbel == cbel
+                @test new_dbel == dbel
+            end
+
+            @testset "all most recent messages should be copied" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, vars, 1, no_evidence)
+                filter_step(filter, runtime, vars, 2, no_evidence)
+                set_message!(runtime, v1, v2, :msg, 1)
+                new_runtime = restart_from_now(filter, runtime, network)
+                @test get_message(runtime, v1, v2, :msg) == 1
+            end
+
+            @testset "messages sent after restart should not be copied" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, vars, 1, no_evidence)
+                filter_step(filter, runtime, vars, 2, no_evidence)
+                new_runtime = restart_from_now(filter, runtime, network)
+                set_message!(runtime, v1, v2, :msg, 1)
+                @test !has_message(new_runtime, v1, v2, :msg)
+            end
+
+            @testset "all global state variables should be copied if set prior to restart" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, vars, 1, no_evidence)
+                filter_step(filter, runtime, vars, 2, no_evidence)
+                set_state!(runtime, :state, 808)
+                new_runtime = restart_from_now(filter, runtime, network)
+                @test get_state(new_runtime, :state) == 808
+            end
+
+            @testset "all global state variables should not be copied if set after restart" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, vars, 1, no_evidence)
+                filter_step(filter, runtime, vars, 2, no_evidence)
+                new_runtime = restart_from_now(filter, runtime, network)
+                set_state!(runtime, :state, 808)
+                @test !has_state(new_runtime, :state)
+            end
+        end
+
+        @testset "Given an ASync BP filter with two steps with different variables instantiated" begin
+            filter = AsyncBP(1000, Int)
+    
+            @testset "current time should be 2" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, [v1], 1, no_evidence)
+                filter_step(filter, runtime, [v2], 2, no_evidence)
+                new_runtime = restart_from_now(filter, runtime, network)
+                @test current_time(new_runtime) == 2
+            end
+
+            @testset "all the most recent instances of variables should be present" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, [v1], 1, no_evidence)
+                filter_step(filter, runtime, [v2], 2, no_evidence)
+                new_runtime = restart_from_now(filter, runtime, network)
+                @test has_instance(new_runtime, v1, 1)
+                @test has_instance(new_runtime, v2, 2)
+            end
+
+            @testset "time of current instances should match time of instantiation" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, [v1], 1, no_evidence)
+                filter_step(filter, runtime, [v2], 2, no_evidence)
+                new_runtime = restart_from_now(filter, runtime, network)
+                @test get_time(get_instance(runtime, v1, 1)) == 1
+                @test get_time(get_instance(runtime, v2, 2)) == 2
+            end
+
+            @testset "no older instances of variables should be present" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, [v1], 1, no_evidence)
+                filter_step(filter, runtime, [v2], 2, no_evidence)
+                new_runtime = restart_from_now(filter, runtime, network)
+                @test !has_instance(new_runtime, v1, 0)
+                @test !has_instance(new_runtime, v2, 1)
+                @test !has_instance(new_runtime, v2, 0)
+            end
+
+            @testset "all values on the most recent instances are copied" begin
+                runtime = Runtime(network, 0)
+                init_filter(filter, runtime)
+                filter_step(filter, runtime, [v1], 1, no_evidence)
+                filter_step(filter, runtime, [v2], 2, no_evidence)
+                new_runtime = restart_from_now(filter, runtime, network)
+                cinst = get_instance(runtime, v1, 1)
+                dinst = get_instance(runtime, v2, 2)
+                cbel = get_belief(runtime, cinst)
+                dbel = get_belief(runtime, dinst)
+                new_cinst = get_instance(new_runtime, v1, 1)
+                new_dinst = get_instance(new_runtime, v2, 2)
+                new_cbel = get_belief(new_runtime, new_cinst)
+                new_dbel = get_belief(new_runtime, new_dinst)
+                @test new_cbel == cbel
+                @test new_dbel == dbel            
+            end
+        end
+    end
+
     @testset "Particle filter" begin
         
         @testset "Synchronous" begin

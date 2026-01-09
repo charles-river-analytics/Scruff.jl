@@ -30,6 +30,7 @@ export
     has_evidence,
     has_instance,
     has_intervention,
+    has_message,
     has_previous_instance,
     has_state,
     has_value,
@@ -589,6 +590,10 @@ end
 
 function get_message(runtime::Runtime, sender::Node, recipient::Node, key::Symbol)
     runtime.messages[(sender, key)][recipient]
+end
+
+function has_message(runtime::Runtime, sender::Node, recipient::Node, key::Symbol)
+    (sender, key) in keys(runtime.messages) && recipient in keys(runtime.messages[(sender, key)])
 end
 
 function distribute_messages!(runtime::Runtime, sender::Node, recipients::Vector{Node}, 
