@@ -482,11 +482,11 @@ import Scruff: make_initial, make_transition
             @testset "no older instances of variables should be present" begin
                 runtime = Runtime(network, 0)
                 init_filter(filter, runtime)
-                filter_step(filter, runtime, [v1], 1, no_evidence)
+                filter_step(filter, runtime, [v1, v2], 1, no_evidence) # note that v2 is also instantiated at time 1
                 filter_step(filter, runtime, [v2], 2, no_evidence)
                 new_runtime = restart_from_now(filter, runtime, network)
                 @test !has_instance(new_runtime, v1, 0)
-                @test !has_instance(new_runtime, v2, 1)
+                @test !has_instance(new_runtime, v2, 1) # and yet it is not present in the new runtime at time 1
                 @test !has_instance(new_runtime, v2, 0)
             end
 
