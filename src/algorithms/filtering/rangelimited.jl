@@ -2,9 +2,9 @@ export
     RangeLimited,
     limit_and_set_beliefs!
 
-mutable struct RangeLimited <: Filter
-    inner_filter :: Filter
-    limits :: Dict{Symbol, Integer}
+mutable struct RangeLimited{F} <: F where F <: Filter
+    inner_filter :: F
+    limits :: Dict{Symbol, Int}
 end
 
 function init_filter(rl::RangeLimited, dr::DynamicRuntime)
@@ -19,7 +19,7 @@ function filter_step(rl::RangeLimited, dynrun::DynamicRuntime{T}, variables::Vec
     restore_dynamic_runtime(wf, dynrun, instrun, time)
 end
 
-function limit_and_set_beliefs!(runtime::Runtime, limits::Dict{Symbol, Integer}, timetype) 
+function limit_and_set_beliefs!(runtime::Runtime, limits::Dict{Symbol, Int}, timetype) 
     network = get_network(runtime)
     ranges = Dict{Symbol, Vector{T} where T}()
     for node in topsort(get_initial_graph(network))
@@ -48,8 +48,8 @@ function set_range_and_belief_limited!(runtime, instance, name, ranges, limit)
 end
 
 function answer(q::Query, rl::RangeLimited, r::Runtime, i::VariableInstance)
-    is = VariableInstance[i]
-    answer(q, rl.inner_filter, r, is)
+    # is = VariableInstance[i]
+    answer(q, rl.inner_filter, r, i)
 end
 
 function probability(rl::RangeLimited, runtime::Runtime, item::Queryable, predicate::Function)

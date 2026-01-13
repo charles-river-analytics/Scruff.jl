@@ -1127,7 +1127,19 @@ import Scruff: make_initial, make_transition
     end
        
     @testset "Range limited filter" begin
-        
+        @testset "Answers queries" begin
+            f1 = Flip(0.7)
+            f2 = Flip(0.6)
+            v = HomogeneousModel(f1, f1)(:v)
+            net = DynamicNetwork([v], VariableGraph(), VariableGraph())
+            limits = Dict{Symbol, Int}()
+            filter = RangeLimited(SyncBP(), limits)
+            runtime = Runtime(net)
+            init_filter(filter, runtime)
+            marg = marginal(filter, runtime, v)
+            @test probability(filter, runtime, v, true) == 0.7
+        end
+
         @testset "Runs discrete without complaining" begin
             cat1 = Cat([1,2,3,4], [0.1, 0.2, 0.3, 0.4])
             cat2 = Cat([6,7,8], [0.2, 0.3, 0.5])
@@ -1138,7 +1150,7 @@ import Scruff: make_initial, make_transition
             net = DynamicNetwork([v1, v2], VariableGraph(), VariableGraph(v1 => [v1], v2 => [v2]))
 
             @testset "with no limits" begin
-                limits = Dict{Symbol, Integer}()
+                limits = Dict{Symbol, Int}()
                 filter = RangeLimited(SyncBP(), limits)
                 variables = [v1, v2]
                 runtime = Runtime(net)
@@ -1149,7 +1161,7 @@ import Scruff: make_initial, make_transition
             end
 
             @testset "with limits greater than range" begin
-                limits = Dict{Symbol, Integer}(:v1 => 6, :v2 => 8)
+                limits = Dict{Symbol, Int}(:v1 => 6, :v2 => 8)
                 filter = RangeLimited(SyncBP(), limits)
                 variables = [v1, v2]
                 runtime = Runtime(net)
@@ -1160,7 +1172,7 @@ import Scruff: make_initial, make_transition
             end
 
             @testset "with limits less than range" begin
-                limits = Dict{Symbol, Integer}(:v1 => 3, :v2 => 2)
+                limits = Dict{Symbol, Int}(:v1 => 3, :v2 => 2)
                 filter = RangeLimited(SyncBP(), limits)
                 variables = [v1, v2]
                 runtime = Runtime(net)
@@ -1171,7 +1183,7 @@ import Scruff: make_initial, make_transition
             end
 
             @testset "with partial limits" begin
-                limits = Dict{Symbol, Integer}(:v1 => 3)
+                limits = Dict{Symbol, Int}(:v1 => 3)
                 filter = RangeLimited(SyncBP(), limits)
                 variables = [v1, v2]
                 runtime = Runtime(net)
@@ -1189,7 +1201,7 @@ import Scruff: make_initial, make_transition
             net = DynamicNetwork([v], VariableGraph(), VariableGraph(v => [v]))
 
             @testset "with no limits" begin
-                limits = Dict{Symbol, Integer}()
+                limits = Dict{Symbol, Int}()
                 filter = RangeLimited(SyncBP(), limits)
                 variables = [v]
                 runtime = Runtime(net)
@@ -1200,7 +1212,7 @@ import Scruff: make_initial, make_transition
             end
 
             @testset "with limits" begin
-                limits = Dict{Symbol, Integer}(:v => 3)
+                limits = Dict{Symbol, Int}(:v => 3)
                 filter = RangeLimited(SyncBP(), limits)
                 variables = [v]
                 runtime = Runtime(net)
@@ -1218,7 +1230,7 @@ import Scruff: make_initial, make_transition
             v = HomogeneousModel(norm, lg)(:v)
             net = DynamicNetwork([v], VariableGraph(), VariableGraph(v => [v]))
 
-            limits = Dict{Symbol, Integer}()
+            limits = Dict{Symbol, Int}()
             filter = RangeLimited(SyncBP(), limits)
             variables = [v]
             runtime = Runtime(net)
@@ -1237,7 +1249,7 @@ import Scruff: make_initial, make_transition
             v = HomogeneousModel(norm, lg)(:v)
             net = DynamicNetwork([v], VariableGraph(), VariableGraph(v => [v]))
 
-            limits = Dict{Symbol, Integer}(:v => 3)
+            limits = Dict{Symbol, Int}(:v => 3)
             filter = RangeLimited(SyncBP(), limits)
             variables = [v]
             runtime = Runtime(net)
@@ -1259,7 +1271,7 @@ import Scruff: make_initial, make_transition
             v2 = HomogeneousModel(cat2, chain2)(:v2)
             net = DynamicNetwork([v1, v2], VariableGraph(), VariableGraph(v1 => [v1], v2 => [v2]))
 
-            limits = Dict{Symbol, Integer}(:v1 => 3, :v2 => 2)
+            limits = Dict{Symbol, Int}(:v1 => 3, :v2 => 2)
             filter = RangeLimited(SyncBP(), limits)
             variables = [v1, v2]
             runtime = Runtime(net)
@@ -1305,7 +1317,7 @@ import Scruff: make_initial, make_transition
             v2 = m2(:v2)
             vars = Variable[v1, v2]
             net = DynamicNetwork(vars, VariableGraph(), VariableGraph(v1 => [v1], v2 => [v1]))
-            filter = RangeLimited(SyncBP(), Dict{Symbol, Score}())
+            filter = RangeLimited(SyncBP(), Dict{Symbol, Int}())
             runtime = Runtime(net)
             init_filter(filter, runtime)
             @test isapprox(probability(filter, runtime, v1, 1), p101, atol = 0.05)
@@ -1380,7 +1392,7 @@ import Scruff: make_initial, make_transition
             v2 = Variable(:v2, ThisVTM2())
             net = DynamicNetwork([v1, v2], VariableGraph(), VariableGraph(v1 => [v1], v2 => [v2]))
 
-            limits = Dict{Symbol, Integer}(:v1 => 3, :v2 => 2)
+            limits = Dict{Symbol, Int}(:v1 => 3, :v2 => 2)
             filter = RangeLimited(AsyncBP(1000000, Float64), limits) # We're limiting the range, so we don't give any suggestion to generating the range in the first place
             variables = [v1, v2]
             runtime = Runtime(net, 0.0)
