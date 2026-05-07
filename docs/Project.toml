@@ -1,5 +1,6 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+Scruff = "6c98c146-7a27-4df0-99b1-e6e7c9a81876"
 
 [compat]
 Documenter = "~0.27.15"
