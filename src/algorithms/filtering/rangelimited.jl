@@ -41,8 +41,11 @@ function set_range_and_belief_limited!(runtime, instance, name, ranges, limit)
     if has_belief(runtime, instance)
         belief = get_belief(runtime, instance)
         samples = limited_support(belief, (), limit)
-        ranges[name] = samples 
-        new_belief = Cat(samples, [1.0 / length(samples) for s in samples])
+        ranges[name] = samples
+        probs = [cpdf(belief, (), s) for s in samples]
+        total = sum(probs)
+        weights = total > 0 ? probs ./ total : fill(1.0 / length(samples), length(samples))
+        new_belief = Cat(samples, weights)
         post_belief!(runtime, instance, new_belief)
     end
 end
