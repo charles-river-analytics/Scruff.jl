@@ -1409,6 +1409,94 @@ import Scruff: make_initial, make_transition
             @test length(support(bel2, (), 1000, Int[])) <= 2
         end
 
+        @testset "Handle Categorical Distributions properly" begin 
+            function discrete_uniform(range::Array)
+                len = length(range)
+                Cat(range, fill(1/len, len))
+            end
+            
+            possible_values = ["a", "b", "c"]
+            struct M1 <: VariableTimeModel{Tuple{}, Tuple{String}, String} end 
+            make_initial(::M1, t) = discrete_uniform(possible_values)
+            make_transition(::M1, parts, t) =
+                Chain(Tuple{String}, String, tuple -> begin 
+                    parent = tuple[1]
+                    new_val = discrete_uniform(possible_values)
+                    Mixture([Constant(parent), new_val], [0.5, 0.5])
+                end)
+
+            mutable struct RuntimeContainer
+                const alg::Algorithm
+                const runtime::Runtime
+                const network::Network
+                var_dict::Dict{Symbol, Variable}
+                time::Int64
+            end
+
+            function initialize_network(
+                var_dict, graph, parent_time_offset=VariableParentTimeOffset(), 
+                num_samples::Int64=100, range_limited_vars=Symbol[])
+                variables = collect(values(var_dict))
+                net = DynamicNetwork(variables, VariableGraph(), VariableGraph(graph), parent_time_offset)
+                runtime = Runtime(net)
+                # decide on algorithm - either AsyncPF or range limited BP
+                # alg = AsyncPF(num_samples, num_samples, Int) 
+                alg = create_range_limited_bp(num_samples, range_limited_vars)
+                init_filter(alg, runtime)
+                return RuntimeContainer(alg, runtime, net, var_dict, 1)
+            end
+
+            function create_range_limited_bp(range_size, range_limited_vars)
+                range_sizes = Dict{Symbol, Int64}()
+                for var in range_limited_vars
+                    range_sizes[var] = range_size
+                end
+                RangeLimited(
+                    AsyncBP(range_size, Int),
+                    range_sizes,
+                )
+            end
+
+            function run_inference(container::RuntimeContainer, evidence::Dict{Symbol, Score}, queries::Vector)
+                alg = container.alg
+                runtime = container.runtime
+                t = container.time
+                if !isa(alg, RangeLimited) && isa(alg.inference_algorithm, Importance)
+                    particles = get_state(runtime, :particles)
+                    newParticles = resample(particles)
+                    set_state!(runtime, :particles, newParticles)
+                end
+                variables = collect(values(container.var_dict))
+                filter_step(alg, runtime, variables, t, evidence)
+                results_dict = Dict{Symbol, Dict}()
+                for var_name in queries 
+                    state_var = container.var_dict[var_name]
+                    belief_state = marginal(alg, runtime, current_instance(runtime, state_var))
+                    inverse_map = belief_state.__inversemap # need to use inverse map to map to probs
+                    state_probs = Dict()
+                    for (state, i) in inverse_map
+                        state_probs[state] = belief_state.params[i]
+                    end
+                    results_dict[var_name] = state_probs  
+                end
+                container.time += 1
+                return results_dict
+            end
+            m1 = M1()(:model1)
+            var_dict = Dict{Symbol, Variable}(
+                :model1 => m1,
+            )
+            graph = VariableGraph(m1 => [m1])
+            num_samples = 200
+            container = initialize_network(var_dict, graph, VariableParentTimeOffset(), num_samples, [:model1]) 
+            result = run_inference(container, Dict{Symbol, Score}(), [:model1])
+            for e in possible_values
+                @test result[:model1][e] == 1/3
+            end
+            result = run_inference(container, Dict{Symbol, Score}(:model1 => HardScore("a")), [:model1])
+            @test result[:model1] == Dict("c" => 0.0, "b" => 0.0, "a" => 1.0)
+        end
+
     #=
     @testset "Profiling filtering algorithms" begin
             norm = Normal(0.0, 1.0)

@@ -105,10 +105,14 @@ end
         # create range by mixing values from ranges created by each combination of parents values up to size
         allrng = collect(Iterators.flatten(values(allcombranges)))
         max_size = length(unique(allrng))
+        parity = true
         while length(rng) < min(size, max_size)
             for is in isrange
+                parity = !parity
                 if(length(allcombranges[is]) > 0)
-                    val = popfirst!(allcombranges[is])
+                    mid_idx = div(length(allcombranges[is]) + 1 + parity, 2)
+                    val = allcombranges[is][mid_idx]
+                    deleteat!(allcombranges[is], mid_idx)
                     push!(rng, val)
                 end
             end
